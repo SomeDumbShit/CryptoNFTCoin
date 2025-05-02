@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2>Admin Panel</h2>
+    <h3>Users</h3>
+    <ul>
+        {% for user in users %}
+            <li>{{ user.username }} ({{ user.email }})</li>
+        {% endfor %}
+    </ul>
+
+    <h3>Arts</h3>
+    <ul>
+        {% for art in arts %}
+            <li>{{ art.metadata }} - {{ art.status }}</li>
+        {% endfor %}
+    </ul>
+{% endblock %}
