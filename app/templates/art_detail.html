@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2>{{ art.metadata }}</h2>
+    <img src="{{ url_for('static', filename='art_images/' + art.image_path) }}" alt="Artwork">
+    <p>Price: 10 currency units</p>
+
+    <form method="POST">
+        <button type="submit">Buy Artwork</button>
+    </form>
+{% endblock %}

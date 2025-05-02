@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block content %}
+    <h2>Create Your Art</h2>
+    <form method="POST">
+        <label>Background:</label>
+        <select name="background">
+            {% for background in attributes['backgrounds'] %}
+                <option value="{{ background }}">{{ background }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Body:</label>
+        <select name="body">
+            {% for body in attributes['bodies'] %}
+                <option value="{{ body }}">{{ body }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Eyes:</label>
+        <select name="eyes">
+            {% for eyes in attributes['eyes'] %}
+                <option value="{{ eyes }}">{{ eyes }}</option>
+            {% endfor %}
+        </select><br>
+
+        <label>Accessories:</label>
+        <select name="accessory">
+            {% for accessory in attributes['accessories'] %}
+                <option value="{{ accessory }}">{{ accessory }}</option>
+            {% endfor %}
+        </select><br>
+
+        <button type="submit">Create Artwork</button>
+    </form>
+{% endblock %}

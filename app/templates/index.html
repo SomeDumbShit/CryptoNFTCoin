@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+{% block content %}
+<h1>Welcome to IndieNFT Marketplace</h1>
+<p>Create, buy and sell digital art.</p>
+<div class="row">
+  {% for art in arts %}
+    <div class="col-md-4 mb-3">
+      <div class="card">
+        <img src="{{ url_for('static', filename='art_images/' + art.image_path) }}" class="card-img-top" alt="Art">
+        <div class="card-body">
+          <p class="card-text">{{ art.art_metadata }}</p>
+          {% if art.status == 'available' %}
+            <a href="{{ url_for('main.buy_art', art_id=art.id) }}" class="btn btn-primary">Buy</a>
+          {% else %}
+            <span class="badge bg-secondary">{{ art.status }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
