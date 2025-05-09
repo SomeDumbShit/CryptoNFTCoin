@@ -32,10 +32,15 @@ class Art(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     image_path = db.Column(db.String(120), nullable=False)
-    art_metadata = db.Column(db.String(500), nullable=False)
     status = db.Column(db.String(20), default='available')  # состояние картины 'available', 'sold', 'auction'
-
+    art_metadata = db.Column(db.String, nullable=False)
+    transactions = db.relationship('Transaction', backref='art_ref', lazy=True)
+    price = db.Column(db.Integer, default=10)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    views = db.Column(db.Integer, default=0)  # для популярности
     auctions = db.relationship('Auction', backref='art', lazy=True)
+    created_at = db.Column(db.DateTime, default=db.func.now())
+
 
 class Auction(db.Model):
     __tablename__ = 'auction'

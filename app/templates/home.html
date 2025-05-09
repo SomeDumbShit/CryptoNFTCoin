@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block title %}Маркетплейс артов{% endblock %}
+
+{% block content %}
+<h1>Маркетплейс артов</h1>
+
+<form method="get" class="filter-form">
+    <label for="sort_by">Сортировать по:</label>
+    <select name="sort_by" id="sort_by" onchange="this.form.submit()">
+        <option value="">Выберите</option>
+        <option value="price" {% if request.args.get('sort_by') == 'price' %}selected{% endif %}>Цене</option>
+        <option value="new" {% if request.args.get('sort_by') == 'new' %}selected{% endif %}>Новизне</option>
+        <option value="popular" {% if request.args.get('sort_by') == 'popular' %}selected{% endif %}>Популярности</option>
+    </select>
+</form>
+
+<div class="art-list">
+    {% for art in arts %}
+        <div class="art-card">
+            <img src="{{ url_for('static', filename='arts/' ~ art.image_path) }}" alt="art image" width="200">
+            <p><strong>Автор:</strong> {{ art.owner.username }}</p>
+            <p><strong>Описание:</strong> {{ art.metadata }}</p>
+            <p><strong>Цена:</strong> 10 монет</p>
+            <p><strong>Просмотры:</strong> {{ art.views or 0 }}</p>
+            {% if art.status != 'sold' %}
+                <form action="{{ url_for('main.buy_art', art_id=art.id) }}" method="post">
+                    <button type="submit">Купить</button>
+                </form>
+            {% else %}
+                <p class="sold-label">Продано</p>
+            {% endif %}
+        </div>
+    {% else %}
+        <p>Пока нет артов для отображения.</p>
+    {% endfor %}
+</div>
+{% endblock %}

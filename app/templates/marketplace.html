@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Маркетплейс артов</h1>
+
+<form method="get" action="{{ url_for('main.marketplace') }}">
+    <label for="sort">Сортировать по:</label>
+    <select name="sort" id="sort" onchange="this.form.submit()">
+        <option value="new" {% if request.args.get('sort') == 'new' %}selected{% endif %}>Новизна</option>
+        <option value="price" {% if request.args.get('sort') == 'price' %}selected{% endif %}>Цена</option>
+        <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>Популярность</option>
+    </select>
+</form>
+
+<div style="display: flex; flex-wrap: wrap;">
+    {% for art in arts %}
+        <div style="border: 1px solid #ccc; margin: 10px; padding: 10px; width: 200px;">
+            <img src="{{ url_for('static', filename='arts/' ~ art.image_path) }}" width="180">
+            <p><strong>Цена:</strong> {{ art.price }}</p>
+            <p><strong>Просмотры:</strong> {{ art.views }}</p>
+            <form action="{{ url_for('main.buy_art', art_id=art.id) }}" method="post">
+                <button type="submit">Купить</button>
+            </form>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
