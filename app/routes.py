@@ -13,7 +13,7 @@ def index():
 @main.route('/')
 @main.route('/home')
 def home():
-    arts = Art.query.all()  # Получаем все арты
+    arts = Art.query.all()
     return render_template('home.html', arts=arts)
 
 
@@ -33,45 +33,62 @@ def create_art():
     eyes = random.choice(art_attributes['eyes'])
     accessory = random.choice(art_attributes['accessories'])
 
+    art_metadata = f'{background}, {body}, {eyes}, {accessory}'
+
     if request.method == 'POST':
         background = request.form.get('background')
         body = request.form.get('body')
         eyes = request.form.get('eyes')
         accessory = request.form.get('accessory')
+        art_metadata = f'{background}, {body}, {eyes}, {accessory}'
 
-        new_art = Art(owner_id=current_user.id,
-                      image_path=f'{background}_{body}_{eyes}_{accessory}.png',
-                      metadata=f'{background}, {body}, {eyes}, {accessory}')
+        new_art = Art(
+            owner_id=current_user.id,
+            image_path=f'{background}_{body}_{eyes}_{accessory}.png',
+            art_metadata=art_metadata,
+            status='available',
+            price=10,
+            views=0
+        )
         db.session.add(new_art)
         db.session.commit()
         flash('Your artwork has been saved!', 'success')
         return redirect(url_for('main.home'))
 
-    return render_template('create_art.html', attributes=art_attributes)
+    return render_template('create_art.html', attributes=art_attributes, art_metadata=art_metadata)
 
 
-@main.route('/buy_art/<int:art_id>', methods=['GET', 'POST'])
+
+@main.route('/buy_art/<int:art_id>', methods=['POST'])
 @login_required
 def buy_art(art_id):
+
     art = Art.query.get_or_404(art_id)
     if art.status == 'sold':
-        flash('This artwork has already been sold.', 'danger')
-        return redirect(url_for('main.home'))
+        flash('Этот арт уже продан.', 'danger')
+        return redirect(url_for('main.marketplace'))
 
-    if current_user.balance < 10:
-        flash('Not enough currency to purchase this artwork.', 'danger')
-        return redirect(url_for('main.home'))
+    if current_user.balance < art.price:
+        flash('Недостаточно валюты для покупки.', 'danger')
+        return redirect(url_for('main.marketplace'))
 
-    current_user.balance -= 10  # Стоимость арта
+    current_user.balance -= art.price
     art.status = 'sold'
 
-    transaction = Transaction(sender_id=current_user.id, recipient_id=art.owner_id,
-                              amount=10, art_id=art.id, transaction_type='purchase')
+    transaction = Transaction(
+        sender_id=current_user.id,
+        recipient_id=art.owner_id,
+        amount=art.price,
+        art_id=art.id,
+        transaction_type='purchase'
+    )
+    art.views += 1
     db.session.add(transaction)
     db.session.commit()
 
-    flash('You have successfully purchased the artwork!', 'success')
-    return redirect(url_for('main.home'))
+    flash('Вы успешно приобрели арт!', 'success')
+    return redirect(url_for('main.marketplace'))
+
 
 
 # (система кейсов)
@@ -92,6 +109,22 @@ def buy_case():
 
     flash(f'You have received: {", ".join(case_items)}', 'success')
     return redirect(url_for('main.home'))
+
+
+@main.route('/marketplace')
+def marketplace():
+    sort_by = request.args.get('sort', 'new')
+    query = Art.query.filter_by(status='available')
+
+    if sort_by == 'price':
+        arts = query.order_by(Art.price.asc()).all()
+    elif sort_by == 'popular':
+        arts = query.order_by(Art.views.desc()).all()
+    else:
+        arts = query.order_by(Art.created_at.desc()).all()
+
+    return render_template('marketplace.html', arts=arts)
+
 
 
 @main.route('/admin', methods=['GET'])
