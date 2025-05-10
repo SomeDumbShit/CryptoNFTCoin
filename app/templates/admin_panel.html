@@ -1,25 +1,11 @@
 {% extends "layout.html" %}
 {% block content %}
     <h2>Admin Panel</h2>
-    <h3>Текущая цена токена: {{ token_price }} USD</h3>
-    <form method="POST" action="{{ url_for('main.buy_token') }}">
-        <label>Имитация покупок валюты</label>
-        <label>
-            <input type="number" name="emission_amount" placeholder="Введите количество токенов">
-        </label>
-        <button type="submit">Buy</button>
-    </form>
-    <form method="POST" action="{{ url_for('main.burn_emission') }}">
-        <label>Сжечь токены (пока в общем, позже - только со своего кошелька)</label>
-        <label>
-            <input type="number" name="burn_amount" placeholder="Введите количество токенов">
-        </label>
-        <button type="submit">Burn</button>
-    </form>
+    <h3>Текущая цена RYT: {{ token_price }} USD</h3>
     <form method="POST" action="{{ url_for('main.mint_emission') }}">
-        <label>Выпуск новой эмиссии</label>
+        <label>Выпуск новой эмиссии</label><br>
         <label>
-            <input type="number" name="mint_amount" placeholder="Введите количество токенов">
+            <input type="number" name="mint_amount" placeholder="Количество RYT">
         </label>
         <button type="submit">Mint</button>
     </form>

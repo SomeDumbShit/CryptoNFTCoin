@@ -40,7 +40,7 @@ class WrappedEconomy(Economy):
     def get_circulating_supply(self):
         return self.economy.circulating_supply
 
-    def get_burned(self):
+    def get_burned_supply(self):
         return self.economy.burned
 
     def mint(self, amount):
@@ -50,6 +50,12 @@ class WrappedEconomy(Economy):
 
     def buy(self, amount):
         self.economy.total_supply += amount
+        self.economy.circulating_supply = self.economy.total_supply - self.economy.burned
+        db.session.commit()
+        self.update_price()
+
+    def sell(self, amount):
+        self.economy.total_supply -= amount
         self.economy.circulating_supply = self.economy.total_supply - self.economy.burned
         db.session.commit()
         self.update_price()

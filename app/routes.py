@@ -2,21 +2,30 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 
 from .extensions import db
-from .models import User, Art, Transaction
+from .models import User, Art
 from .economy import get_economy
+from .transactions import *
 import random
 
 main = Blueprint('main', __name__)
+
 
 @main.route('/')
 def index():
     return render_template('index.html')
 
+
 @main.route('/')
 @main.route('/home')
 def home():
+    economy = get_economy()
+    user_id = current_user.id
+    balance = round(db.session.query(User).get(user_id).balance, 2)
+    token_price = round(economy.get_token_price(), 4)
+    available_tokens = economy.get_max_supply() - economy.get_total_supply()
     arts = Art.query.all()
-    return render_template('home.html', arts=arts)
+    return render_template('home.html', arts=arts, balance=balance, token_price=token_price,
+                           available_tokens=available_tokens)
 
 
 art_attributes = {
@@ -60,11 +69,9 @@ def create_art():
     return render_template('create_art.html', attributes=art_attributes, art_metadata=art_metadata)
 
 
-
 @main.route('/buy_art/<int:art_id>', methods=['POST'])
 @login_required
 def buy_art(art_id):
-
     art = Art.query.get_or_404(art_id)
     if art.status == 'sold':
         flash('Этот арт уже продан.', 'danger')
@@ -77,20 +84,11 @@ def buy_art(art_id):
     current_user.balance -= art.price
     art.status = 'sold'
 
-    transaction = Transaction(
-        sender_id=current_user.id,
-        recipient_id=art.owner_id,
-        amount=art.price,
-        art_id=art.id,
-        transaction_type='purchase'
-    )
     art.views += 1
-    db.session.add(transaction)
-    db.session.commit()
+    art_purchase(buyer_id=current_user.id, seller_id=art.owner_id, amount=art.price, art_id=art.id)
 
     flash('Вы успешно приобрели арт!', 'success')
     return redirect(url_for('main.marketplace'))
-
 
 
 # (система кейсов)
@@ -113,7 +111,6 @@ def buy_case():
     return redirect(url_for('main.home'))
 
 
-
 @main.route('/marketplace')
 def marketplace():
     sort_by = request.args.get('sort', 'new')
@@ -127,7 +124,6 @@ def marketplace():
         arts = query.order_by(Art.created_at.desc()).all()
 
     return render_template('marketplace.html', arts=arts)
-
 
 
 @main.route('/admin', methods=['GET', 'POST'])
@@ -148,37 +144,71 @@ def admin_panel():
             flash(f"Превышен лимит эмиссии", category='danger')
             return redirect(url_for('main.admin_panel'))
 
-    token_price = economy.get_token_price()
+    token_price = round(economy.get_token_price(), 4)
     users = User.query.all()
     arts = Art.query.all()
     return render_template('admin_panel.html', users=users, arts=arts, token_price=token_price)
 
 
-@main.route('/admin/burn_emission', methods=['POST'])
+@main.route('/burn_emission', methods=['POST'])
 @login_required
 def burn_emission():
-    economy = get_economy()
-    burn_amount = int(request.form['burn_amount'])
-    economy.burn(burn_amount)
-    flash(f"{burn_amount} токенов было сожжено", category='success')
-    return redirect(url_for('main.admin_panel'))
+    burn_amount = float(request.form['burn_amount'])
+    user_id = current_user.id
+    balance = db.session.query(User).get(user_id).balance
+    if balance >= burn_amount:
+        burn_tokens(current_user.id, burn_amount)
+        flash(f"{burn_amount} RYT было сожжено", category='success')
+    else:
+        flash(f"Недостаточно RYT для сжигания", category='danger')
+    return redirect(url_for('main.home'))
 
 
 @main.route('/admin/mint_emission', methods=['POST'])
 @login_required
 def mint_emission():
-    economy = get_economy()
-    burn_amount = int(request.form['burn_amount'])
-    economy.burn(burn_amount)
-    flash(f"{burn_amount} токенов было сожжено", category='success')
+    mint_amount = float(request.form['mint_amount'])
+    mint_tokens(current_user.id, mint_amount)
+    flash(f"{mint_amount} RYT было успешно выпущено", category='success')
     return redirect(url_for('main.admin_panel'))
 
 
-@main.route('/admin/buy_token', methods=['POST'])
+@main.route('/buy_token', methods=['POST'])
 @login_required
 def buy_token():
+    token_amount = float(request.form['token_amount'])
+    purchase(current_user.id, token_amount)
+    flash(f"{token_amount} RYT было успешно куплено", category='success')
+    return redirect(url_for('main.home'))
+
+
+@main.route('/sell_token', methods=['POST'])
+@login_required
+def sell_token():
+    token_amount = float(request.form['token_amount'])
+    user_id = current_user.id
+    balance = db.session.query(User).get(user_id).balance
+    if balance >= token_amount:
+        sell(current_user.id, token_amount)
+        flash(f"{token_amount} RYT было успешно продано", category='success')
+    else:
+        flash(f"Недостаточно RYT для продажи", category='danger')
+    return redirect(url_for('main.home'))
+
+
+@main.route('/RYT', methods=['GET'])
+@main.route('/token_stats', methods=['GET'])
+@login_required
+def token_stats():
+    user_id = current_user.id
     economy = get_economy()
-    burn_amount = int(request.form['burn_amount'])
-    economy.burn(burn_amount)
-    flash(f"{burn_amount} токенов было сожжено", category='success')
-    return redirect(url_for('main.admin_panel'))
+    balance = db.session.query(User).get(user_id).balance
+    token_price = round(economy.get_token_price(), 4)
+    total_supply = economy.get_total_supply()
+    circulating_supply = economy.get_circulating_supply()
+    max_supply = economy.get_max_supply()
+    burned_supply = economy.get_burned_supply()
+    market_cap = economy.get_market_cap()
+    return render_template('token_stats.html', balance=balance, token_price=token_price,
+                           total_supply=total_supply,  circulating_supply=circulating_supply, max_supply=max_supply,
+                           burned_supply=burned_supply, market_cap=market_cap)

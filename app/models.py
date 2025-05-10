@@ -42,8 +42,6 @@ class Art(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     views = db.Column(db.Integer, default=0)  # для популярности
     auctions = db.relationship('Auction', backref='art', lazy=True)
-    created_at = db.Column(db.DateTime, default=db.func.now())
-
 
 
 class Auction(db.Model):
@@ -74,12 +72,14 @@ class UserQuest(db.Model):
 class Transaction(db.Model):
     __tablename__ = 'transaction'
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     amount = db.Column(db.Integer, nullable=False)
-    art_id = db.Column(db.Integer, db.ForeignKey('art.id'))
+    transaction_fee = db.Column(db.Integer, nullable=True)
+    art_id = db.Column(db.Integer, db.ForeignKey('art.id'), nullable=True)
+    transaction_type = db.Column(db.String(50), nullable=False)  # все возможные типы в transactions.TransactionType
+    meta = db.Column(db.String(255), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    transaction_type = db.Column(db.String(50))  # транкзация может быть 'purchase', 'auction', 'reward'
 
 
 class Economy(db.Model):
@@ -90,7 +90,7 @@ class Economy(db.Model):
     burned = db.Column(db.Integer, default=0)  # сожжено токенов
     base_price = db.Column(db.Integer, default=0.1)  # минимальная цена
     price = db.Column(db.Integer, default=0.1)  # текущая цена
-    growth_factor = db.Column(db.Integer, default=1)  # коэффициент волатильности
+    growth_factor = db.Column(db.Integer, default=10)  # коэффициент волатильности
     last_updated = db.Column(db.Integer, default=datetime.utcnow)
     max_supply = db.Column(db.Integer, default=1_000_000)  # предел количества токенов
     market_cap = db.Column(db.Integer, default=0)  # капитализация
