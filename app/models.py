@@ -1,8 +1,10 @@
+from email.policy import default
 
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from .extensions import db
 from flask_login import UserMixin
+
 
 class User(db.Model, UserMixin):
     __tablename__ = 'user'
@@ -27,6 +29,7 @@ class User(db.Model, UserMixin):
         lazy=True
     )
 
+
 class Art(db.Model):
     __tablename__ = 'art'
     id = db.Column(db.Integer, primary_key=True)
@@ -39,7 +42,6 @@ class Art(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     views = db.Column(db.Integer, default=0)  # для популярности
     auctions = db.relationship('Auction', backref='art', lazy=True)
-    created_at = db.Column(db.DateTime, default=db.func.now())
 
 
 class Auction(db.Model):
@@ -50,12 +52,14 @@ class Auction(db.Model):
     last_bidder_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     end_time = db.Column(db.DateTime, nullable=False)
 
+
 class Quest(db.Model):
     __tablename__ = 'quest'
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(500), nullable=False)
     reward = db.Column(db.Integer, nullable=False)
     condition = db.Column(db.String(100), nullable=False)
+
 
 class UserQuest(db.Model):
     __tablename__ = 'user_quest'
@@ -64,12 +68,29 @@ class UserQuest(db.Model):
     quest_id = db.Column(db.Integer, db.ForeignKey('quest.id'), nullable=False)
     status = db.Column(db.String(20), default='in_progress')  # может быть 'in_progress', 'completed'
 
+
 class Transaction(db.Model):
     __tablename__ = 'transaction'
     id = db.Column(db.Integer, primary_key=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     amount = db.Column(db.Integer, nullable=False)
-    art_id = db.Column(db.Integer, db.ForeignKey('art.id'))
+    transaction_fee = db.Column(db.Integer, nullable=True)
+    art_id = db.Column(db.Integer, db.ForeignKey('art.id'), nullable=True)
+    transaction_type = db.Column(db.String(50), nullable=False)  # все возможные типы в transactions.TransactionType
+    meta = db.Column(db.String(255), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    transaction_type = db.Column(db.String(50))  # транкзация может быть 'purchase', 'auction', 'reward'
+
+
+class Economy(db.Model):
+    __tablename__ = 'economy'
+    id = db.Column(db.Integer, primary_key=True)
+    total_supply = db.Column(db.Integer, default=0)  # выпущено токенов
+    circulating_supply = db.Column(db.Integer, default=0)  # оборот токенов (выпущено - сожжено)
+    burned = db.Column(db.Integer, default=0)  # сожжено токенов
+    base_price = db.Column(db.Integer, default=0.1)  # минимальная цена
+    price = db.Column(db.Integer, default=0.1)  # текущая цена
+    growth_factor = db.Column(db.Integer, default=10)  # коэффициент волатильности
+    last_updated = db.Column(db.Integer, default=datetime.utcnow)
+    max_supply = db.Column(db.Integer, default=1_000_000)  # предел количества токенов
+    market_cap = db.Column(db.Integer, default=0)  # капитализация

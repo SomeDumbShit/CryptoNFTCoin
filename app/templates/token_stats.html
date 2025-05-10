@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+
+{% block title %}Статистика токена{% endblock %}
+
+{% block content %}
+<h2>RYT coin</h2>
+    <h2>{{ token_price }} USD</h2><br>
+    <p>Ваш баланс: </p>
+    <h3>{{ balance }} RYT = {{ token_price * balance }} USD</h3><br>
+    <p>Общее предложение:</p>
+    <h3>{{ total_supply }} RYT</h3><br>
+    <p>Циркулирующее предложение:</p>
+    <h3>{{ circulating_supply }} RYT</h3><br>
+    <p>Максимальное предложение:</p>
+    <h3>{{ max_supply }} RYT</h3><br>
+    <p>Сожжено:</p>
+    <h3>{{ burned_supply }} RYT</h3><br>
+    <p>Рыночная капитализация:</p>
+    <h3>{{ market_cap }} USD</h3>
+{% endblock %}

@@ -1,6 +1,14 @@
 {% extends "layout.html" %}
 {% block content %}
     <h2>Admin Panel</h2>
+    <h3>Текущая цена RYT: {{ token_price }} USD</h3>
+    <form method="POST" action="{{ url_for('main.mint_emission') }}">
+        <label>Выпуск новой эмиссии</label><br>
+        <label>
+            <input type="number" name="mint_amount" placeholder="Количество RYT">
+        </label>
+        <button type="submit">Mint</button>
+    </form>
     <h3>Users</h3>
     <ul>
         {% for user in users %}

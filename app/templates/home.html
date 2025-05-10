@@ -1,10 +1,33 @@
-{% extends 'base.html' %}
+{% extends 'layout.html' %}
 
 {% block title %}Маркетплейс артов{% endblock %}
 
 {% block content %}
 <h1>Маркетплейс артов</h1>
-
+    <h3>Текущая цена RYT: {{ token_price }} USD</h3>
+    <h3>Ваш баланс: {{ balance }}RYT = {{ token_price * balance }} USD</h3>
+    <form method="POST" action="{{ url_for('main.buy_token') }}">
+        <label>Купить RYT (доступно: {{ available_tokens }})</label><br>
+        <label>
+            <input type="number" name="token_amount" placeholder="Количество RYT">
+        </label>
+        <button type="submit">Buy</button><br><br>
+    </form>
+    <form method="POST" action="{{ url_for('main.sell_token') }}">
+        <label>Продать RYT</label><br>
+        <label>
+            <input type="number" name="token_amount" placeholder="Количество RYT">
+        </label>
+        <button type="submit">Sell</button><br><br>
+    </form>
+    <form method="POST" action="{{ url_for('main.burn_emission') }}">
+        <label>Сжечь RYT</label><br>
+        <label>
+            <input type="number" name="burn_amount" placeholder="Количество RYT">
+        </label>
+        <button type="submit">Burn</button><br><br>
+    </form>
+<br>
 <form method="get" class="filter-form">
     <label for="sort_by">Сортировать по:</label>
     <select name="sort_by" id="sort_by" onchange="this.form.submit()">
@@ -18,6 +41,7 @@
 <div class="art-list">
     {% for art in arts %}
         <div class="art-card">
+            <br>
             <img src="{{ url_for('static', filename='arts/' ~ art.image_path) }}" alt="art image" width="200">
             <p><strong>Автор:</strong> {{ art.owner.username }}</p>
             <p><strong>Описание:</strong> {{ art.metadata }}</p>
