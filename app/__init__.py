@@ -24,9 +24,9 @@ def create_app():
     app.register_blueprint(main)
     app.register_blueprint(auth)
 
-    from .models import User, Art, Auction, Quest, UserQuest, Transaction
+    from .models import User, Art, Auction, Quest, UserQuest, Transaction, Economy
 
-    # создание заранее табл
+    # создание заранее табл и загрузка данных экономики
     with app.app_context():
         db.create_all()
 

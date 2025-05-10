@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+
 from .extensions import db
 from .models import User, Art, Transaction
+from .economy import get_economy
 import random
 
 main = Blueprint('main', __name__)
@@ -111,6 +113,7 @@ def buy_case():
     return redirect(url_for('main.home'))
 
 
+
 @main.route('/marketplace')
 def marketplace():
     sort_by = request.args.get('sort', 'new')
@@ -127,13 +130,55 @@ def marketplace():
 
 
 
-@main.route('/admin', methods=['GET'])
+@main.route('/admin', methods=['GET', 'POST'])
 @login_required
 def admin_panel():
+    economy = get_economy()
     if current_user.role != 'admin':
         flash('You do not have access to this page.', 'danger')
         return redirect(url_for('main.home'))
 
+    if request.method == 'POST':
+        emission_amount = int(request.form['emission_amount'])
+        if economy.can_mint(emission_amount):
+            economy.mint(emission_amount)
+            flash(f"Выпущено {emission_amount} токенов", category='success')
+            return redirect(url_for('main.admin_panel'))
+        else:
+            flash(f"Превышен лимит эмиссии", category='danger')
+            return redirect(url_for('main.admin_panel'))
+
+    token_price = economy.get_token_price()
     users = User.query.all()
     arts = Art.query.all()
-    return render_template('admin_panel.html', users=users, arts=arts)
+    return render_template('admin_panel.html', users=users, arts=arts, token_price=token_price)
+
+
+@main.route('/admin/burn_emission', methods=['POST'])
+@login_required
+def burn_emission():
+    economy = get_economy()
+    burn_amount = int(request.form['burn_amount'])
+    economy.burn(burn_amount)
+    flash(f"{burn_amount} токенов было сожжено", category='success')
+    return redirect(url_for('main.admin_panel'))
+
+
+@main.route('/admin/mint_emission', methods=['POST'])
+@login_required
+def mint_emission():
+    economy = get_economy()
+    burn_amount = int(request.form['burn_amount'])
+    economy.burn(burn_amount)
+    flash(f"{burn_amount} токенов было сожжено", category='success')
+    return redirect(url_for('main.admin_panel'))
+
+
+@main.route('/admin/buy_token', methods=['POST'])
+@login_required
+def buy_token():
+    economy = get_economy()
+    burn_amount = int(request.form['burn_amount'])
+    economy.burn(burn_amount)
+    flash(f"{burn_amount} токенов было сожжено", category='success')
+    return redirect(url_for('main.admin_panel'))
