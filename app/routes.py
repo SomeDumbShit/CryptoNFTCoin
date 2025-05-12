@@ -1,13 +1,19 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-
+import os
+from werkzeug.utils import secure_filename
 from .extensions import db
 from .models import User, Art
 from .economy import get_economy
 from .transactions import *
 import random
+from flask import Blueprint, request, current_app
+import os
+from flask_login import current_user
+from app.extensions import db
 
 main = Blueprint('main', __name__)
+
 
 
 @main.route('/')
@@ -163,6 +169,15 @@ def burn_emission():
         flash(f"Недостаточно RYT для сжигания", category='danger')
     return redirect(url_for('main.home'))
 
+from app.forms import AvatarUploadForm
+
+@main.route('/profile')
+@login_required
+def profile():
+    from flask_login import current_user
+    user_arts = Art.query.filter_by(owner_id=current_user.id).all()
+    form = AvatarUploadForm()
+    return render_template('profile.html', user=current_user, user_arts=user_arts, avatar_form=form)
 
 @main.route('/admin/mint_emission', methods=['POST'])
 @login_required
@@ -172,6 +187,28 @@ def mint_emission():
     flash(f"{mint_amount} RYT было успешно выпущено", category='success')
     return redirect(url_for('main.admin_panel'))
 
+@main.route('/upload_avatar', methods=['POST'])
+@login_required
+def upload_avatar():
+    file = request.files.get('avatar')
+
+    if file:
+        filename = file.filename
+        upload_folder = current_app.config['UPLOAD_FOLDER']
+
+        avatar_dir = os.path.join(upload_folder, 'avatars')
+        os.makedirs(avatar_dir, exist_ok=True)
+
+        filepath = os.path.join(avatar_dir, filename)
+        file.save(filepath)
+
+        # Сохраняем путь относительно /static
+        current_user.avatar = f'uploads/avatars/{filename}'
+        db.session.commit()
+
+        return redirect(url_for('main.profile'))
+
+    return "No file uploaded", 400
 
 @main.route('/buy_token', methods=['POST'])
 @login_required

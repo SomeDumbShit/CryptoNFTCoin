@@ -1,0 +1,53 @@
+
+{% extends "layout.html" %}
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data" action="{{ url_for('main.upload_avatar') }}">
+  {{ avatar_form.hidden_tag() }}
+  <div class="mb-3">
+    {{ avatar_form.avatar.label(class="form-label") }}
+    {{ avatar_form.avatar(class="form-control") }}
+  </div>
+  {{ avatar_form.submit(class="btn btn-primary") }}
+</form>
+
+<div class="container py-5">
+  <div class="card shadow-lg">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-4">
+        <img src="{{ url_for('static', filename=user.avatar) }}" alt="Avatar" width="150">
+        <div>
+          <h3 class="card-title mb-1">{{ current_user.username }}</h3>
+          <p class="text-muted mb-0">Email: {{ current_user.email }}</p>
+          <p class="text-muted">Баланс: <strong>{{ current_user.balance }}</strong> 💰</p>
+        </div>
+      </div>
+
+      <hr>
+
+      <h4 class="mb-3">Ваши арты</h4>
+      {% if user_arts %}
+        <div class="row">
+          {% for art in user_arts %}
+            <div class="col-md-4 mb-4">
+              <div class="card h-100 shadow-sm">
+                <img src="{{ url_for('static', filename='uploads/' ~ art.image_path) }}"
+                     class="card-img-top" alt="Арт">
+                <div class="card-body">
+                  <h5 class="card-title">{{ art.art_metadata }}</h5>
+                  <p class="card-text text-muted">Статус: {{ art.status }}</p>
+                  <p class="card-text">Цена: <strong>{{ art.price }}</strong> 🪙</p>
+                  <p class="card-text">Просмотры: {{ art.views }}</p>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">У вас пока нет артов 😢</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
