@@ -14,6 +14,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(100), nullable=False)
     balance = db.Column(db.Integer, default=0)
     role = db.Column(db.String(20), default='user')  # может быть 'user', 'artist', 'admin'
+    avatar = db.Column(db.String(255), default='uploads/avatars/default.png', nullable=False)
 
     arts = db.relationship('Art', backref='owner', lazy=True)
     transactions_sent = db.relationship(
