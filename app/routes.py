@@ -1,20 +1,22 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_required, current_user
 import os
-from werkzeug.utils import secure_filename
-from .extensions import db
-from .models import User, Art
-from .economy import get_economy
-from .transactions import *
 import random
+
 from flask import Blueprint, request, current_app
-import os
+from flask import render_template, redirect, url_for, flash
 from flask_login import current_user
-from app.extensions import db
+from flask_login import login_required
+from werkzeug.utils import secure_filename
+
+from .models import Art
+from .transactions import *
 
 main = Blueprint('main', __name__)
+root_path = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(root_path, 'static/uploads/arts')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
-
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @main.route('/')
 def index():
@@ -49,7 +51,6 @@ def create_art():
     body = random.choice(art_attributes['bodies'])
     eyes = random.choice(art_attributes['eyes'])
     accessory = random.choice(art_attributes['accessories'])
-
     art_metadata = f'{background}, {body}, {eyes}, {accessory}'
 
     if request.method == 'POST':
@@ -67,6 +68,7 @@ def create_art():
             price=10,
             views=0
         )
+        new_art.owner_id = current_user.id
         db.session.add(new_art)
         db.session.commit()
         flash('Your artwork has been saved!', 'success')
@@ -117,6 +119,37 @@ def buy_case():
     return redirect(url_for('main.home'))
 
 
+@main.route('/art/<int:art_id>')
+def view_art(art_id):
+    art = Art.query.get_or_404(art_id)
+    art.views += 1
+    db.session.commit()
+    return render_template('art_detail.html', art=art)
+
+
+@main.route('/edit_art/<int:art_id>', methods=['GET', 'POST'])
+@login_required
+def edit_art(art_id):
+    art = Art.query.get_or_404(art_id)
+
+    if request.method == 'POST':
+        art.art_metadata = request.form['metadata']
+        art.description = request.form['description']
+        art.price = int(request.form['price'])
+
+        file = request.files.get('image')
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            art.image_path = f'uploads/arts/{filename}'
+
+        db.session.commit()
+        flash('Арт успешно обновлён', 'success')
+        return redirect(url_for('main.marketplace'))
+
+    return render_template('edit_art.html', art=art)
+
 @main.route('/marketplace')
 def marketplace():
     sort_by = request.args.get('sort', 'new')
@@ -130,6 +163,28 @@ def marketplace():
         arts = query.order_by(Art.created_at.desc()).all()
 
     return render_template('marketplace.html', arts=arts)
+
+
+@main.route('/give_tokens', methods=['POST'])
+@login_required
+def give_tokens():
+    if current_user.role != 'admin':
+        flash('Access denied.', 'danger')
+        return redirect(url_for('main.home'))
+
+    user_id = request.form.get('user_id')
+    amount = int(request.form.get('amount'))
+
+    user = User.query.get(user_id)
+    if not user:
+        flash("Пользователь не найден", 'danger')
+        return redirect(url_for('main.admin_panel'))
+
+    user.balance += amount
+    db.session.commit()
+
+    flash(f"Пользователю {user.username} выдано {amount} токенов", 'success')
+    return redirect(url_for('main.admin_panel'))
 
 
 @main.route('/admin', methods=['GET', 'POST'])
@@ -202,7 +257,6 @@ def upload_avatar():
         filepath = os.path.join(avatar_dir, filename)
         file.save(filepath)
 
-        # Сохраняем путь относительно /static
         current_user.avatar = f'uploads/avatars/{filename}'
         db.session.commit()
 

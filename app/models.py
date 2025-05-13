@@ -1,9 +1,8 @@
-from email.policy import default
-
-from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
-from .extensions import db
+
 from flask_login import UserMixin
+
+from .extensions import db
 
 
 class User(db.Model, UserMixin):
@@ -14,7 +13,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(100), nullable=False)
     balance = db.Column(db.Integer, default=0)
     role = db.Column(db.String(20), default='user')  # может быть 'user', 'artist', 'admin'
-    avatar = db.Column(db.String(255), default='uploads/avatars/default.png', nullable=False)
+    avatar = db.Column(db.String(255), default='uploads/avatars/default.png')
 
     arts = db.relationship('Art', backref='owner', lazy=True)
     transactions_sent = db.relationship(
@@ -43,6 +42,7 @@ class Art(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     views = db.Column(db.Integer, default=0)  # для популярности
     auctions = db.relationship('Auction', backref='art', lazy=True)
+    description = db.Column(db.Text)
 
 
 class Auction(db.Model):
