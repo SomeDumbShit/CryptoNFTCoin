@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Редактировать арт</h2>
+    <form method="POST" enctype="multipart/form-data">
+        <div class="mb-3">
+            <label for="metadata" class="form-label">Название</label>
+            <input type="text" class="form-control" name="metadata" id="metadata" value="{{ art.art_metadata }}">
+        </div>
+        <div class="mb-3">
+            <label for="description" class="form-label">Описание</label>
+            <textarea class="form-control" name="description" id="description">{{ art.description }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="price" class="form-label">Цена</label>
+            <input type="number" class="form-control" name="price" id="price" value="{{ art.price }}">
+        </div>
+        <div class="mb-3">
+            <label for="image" class="form-label">Изображение (опционально)</label>
+            <input type="file" class="form-control" name="image" id="image">
+        </div>
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+    </form>
+</div>
+{% endblock %}

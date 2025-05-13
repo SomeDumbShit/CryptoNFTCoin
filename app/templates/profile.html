@@ -42,8 +42,10 @@
           {% for art in user_arts %}
             <div class="col-md-4 mb-4">
               <div class="card h-100 shadow-sm">
-                <img src="{{ url_for('static', filename='uploads/' ~ art.image_path) }}"
-                     class="card-img-top" alt="Арт">
+                <a href="{{ url_for('main.view_art', art_id=art.id) }}">
+                    <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
+
+                </a>
                 <div class="card-body">
                   <h5 class="card-title">{{ art.art_metadata }}</h5>
                   <p class="card-text text-muted">Статус: {{ art.status }}</p>

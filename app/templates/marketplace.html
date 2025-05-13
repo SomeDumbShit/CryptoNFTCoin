@@ -1,26 +1,33 @@
 {% extends "layout.html" %}
 {% block content %}
-<h1>Маркетплейс артов</h1>
+<div class="container mt-4">
+    <h1 class="mb-4">Маркетплейс артов</h1>
 
-<form method="get" action="{{ url_for('main.marketplace') }}">
-    <label for="sort">Сортировать по:</label>
-    <select name="sort" id="sort" onchange="this.form.submit()">
-        <option value="new" {% if request.args.get('sort') == 'new' %}selected{% endif %}>Новизна</option>
-        <option value="price" {% if request.args.get('sort') == 'price' %}selected{% endif %}>Цена</option>
-        <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>Популярность</option>
-    </select>
-</form>
+    <form method="get" action="{{ url_for('main.marketplace') }}" class="mb-3">
+        <label for="sort" class="form-label">Сортировать по:</label>
+        <select name="sort" id="sort" class="form-select w-25" onchange="this.form.submit()">
+            <option value="new" {% if request.args.get('sort') == 'new' %}selected{% endif %}>Новизна</option>
+            <option value="price" {% if request.args.get('sort') == 'price' %}selected{% endif %}>Цена</option>
+            <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>Популярность</option>
+        </select>
+    </form>
 
-<div style="display: flex; flex-wrap: wrap;">
-    {% for art in arts %}
-        <div style="border: 1px solid #ccc; margin: 10px; padding: 10px; width: 200px;">
-            <img src="{{ url_for('static', filename='arts/' ~ art.image_path) }}" width="180">
-            <p><strong>Цена:</strong> {{ art.price }}</p>
-            <p><strong>Просмотры:</strong> {{ art.views }}</p>
-            <form action="{{ url_for('main.buy_art', art_id=art.id) }}" method="post">
-                <button type="submit">Купить</button>
-            </form>
+    <div class="row">
+        {% for art in arts %}
+        <div class="col-md-3 mb-4">
+            <div class="card h-100">
+                <a href="{{ url_for('main.view_art', art_id=art.id) }}">
+                    <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
+
+                </a>
+                <div class="card-body">
+                    <h5 class="card-title">{{ art.art_metadata[:30] }}</h5>
+                    <p class="card-text">Цена: {{ art.price }} RYT</p>
+                    <p class="card-text"><small>Просмотры: {{ art.views }}</small></p>
+                </div>
+            </div>
         </div>
-    {% endfor %}
+        {% endfor %}
+    </div>
 </div>
 {% endblock %}

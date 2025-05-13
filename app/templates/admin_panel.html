@@ -19,7 +19,20 @@
     <h3>Arts</h3>
     <ul>
         {% for art in arts %}
-            <li>{{ art.metadata }} - {{ art.status }}</li>
+            <li>{{ art.art_metadata }} - {{ art.status }}</li>
         {% endfor %}
     </ul>
+    <h3>Выдать токены пользователю</h3>
+    <form method="POST" action="{{ url_for('main.give_tokens') }}">
+        <label for="user_id">Пользователь:</label>
+        <select name="user_id">
+            {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }} ({{ user.email }})</option>
+            {% endfor %}
+        </select><br>
+        <label for="amount">Сколько токенов:</label>
+        <input type="number" name="amount" min="1" required><br>
+        <button type="submit">Выдать</button>
+    </form>
+
 {% endblock %}
