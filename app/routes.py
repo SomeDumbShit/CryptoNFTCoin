@@ -46,9 +46,9 @@ art_attributes = {
     'eyes': ['angry_eyes', 'star_eyes'],
     'ears': ['black_ears'],
     'mouth': ['cigar', 'joyful', 'singing'],
-    'clothes': ['blaze'],
-    'hats': ['clown_hat', 'cylinder', 'king', 'purple_hat', 'red_hat'],
-    'accessories': ['ring']
+    'clothes': ['none', 'blaze'],
+    'hats': ['none', 'clown_hat', 'cylinder', 'king', 'purple_hat', 'red_hat'],
+    'accessories': ['none', 'ring']
 }
 
 
@@ -56,18 +56,18 @@ art_attributes = {
 @login_required
 def create_art():
     selected = {
-        'background': request.args.get('background', 'green'),
-        'body': request.args.get('body', 'panda'),
-        'eyes': request.args.get('eyes', 'angry_eyes'),
-        'ears': request.args.get('ears', 'black_ears'),
-        'mouth': request.args.get('mouth', 'joyful'),
-        'clothes': request.args.get('clothes', 'blaze'),
-        'hats': request.args.get('hats', 'none'),
-        'accessory': request.args.get('accessory', 'none')
+        'background': request.form.get('background', 'green'),
+        'body': request.form.get('body', 'panda'),
+        'eyes': request.form.get('eyes', 'angry_eyes'),
+        'ears': request.form.get('ears', 'black_ears'),
+        'mouth': request.form.get('mouth', 'joyful'),
+        'clothes': request.form.get('clothes', 'blaze'),
+        'hats': request.form.get('hats', 'none'),
+        'accessory': request.form.get('accessory', 'none')
     }
 
     preview_url = None
-    if request.args.get('action') == 'preview':
+    if request.form.get('action') == 'preview':
         preview_url = url_for('main.preview_image',
                               background=selected['background'],
                               body=selected['body'],
@@ -78,26 +78,38 @@ def create_art():
                               clothes=selected['clothes'],
                               hats=selected['hats']
                               )
-    '''if request.method == 'POST':
-        background = request.form.get('background')
-        body = request.form.get('body')
-        eyes = request.form.get('eyes')
-        accessory = request.form.get('accessory')
-        art_metadata = f'{background}, {body}, {eyes}, {accessory}'
-
-        new_art = Art(
-            owner_id=current_user.id,
-            image_path=f'{background}_{body}_{eyes}_{accessory}.png',
-            art_metadata=art_metadata,
-            status='available',
-            price=10,
-            views=0
-        )
-        new_art.owner_id = current_user.id
-        db.session.add(new_art)
-        db.session.commit()
-        flash('Your artwork has been saved!', 'success')
-        return redirect(url_for('main.home'))'''
+    elif request.form.get('action') == 'save':
+        art_price = request.form.get('price')
+        if not art_price:
+            flash('Назначьте цену арта', 'danger')
+        else:
+            paths = [
+                f'app/static/attributes/background/{selected['background']}.png',
+                f'app/static/attributes/body/{selected['body']}.png',
+                f'app/static/attributes/eyes/{selected['eyes']}.png',
+                f'app/static/attributes/ears/{selected['ears']}.png',
+                f'app/static/attributes/clothes/{selected['clothes']}.png',
+                f'app/static/attributes/mouth/{selected['mouth']}.png',
+                f'app/static/attributes/hats/{selected['hats']}.png',
+                f'app/static/attributes/accessories/{selected['accessory']}.png'
+            ]
+            img = combine_layers(paths)
+            img_dir = os.path.join(UPLOAD_FOLDER, 'arts')
+            os.makedirs(img_dir, exist_ok=True)
+            img.save(os.path.join(img_dir, f'{'_'.join(selected.values())}.png'))
+            new_art = Art(
+                owner_id=current_user.id,
+                image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
+                art_metadata=', '.join(selected.values()),
+                status='available',
+                price=art_price,
+                views=0
+            )
+            new_art.owner_id = current_user.id
+            db.session.add(new_art)
+            db.session.commit()
+            flash('Your artwork has been saved!', 'success')
+            return redirect(url_for('main.home'))
 
     return render_template('create_art.html', attributes=art_attributes, selected=selected, preview_url=preview_url)
 
@@ -110,18 +122,18 @@ def preview_image():
     accessory = request.args.get('accessory', 'none')
     ears = request.args.get('ears', 'black_ears')
     mouth = request.args.get('mouth', 'joyful')
-    clothes = request.args.get('clothes', 'blaze')
+    clothes = request.args.get('clothes', 'none')
     hats = request.args.get('hats', 'none')
 
     paths = [
-        f'static/attributes/background/{background}.png',
-        f'static/attributes/body/{body}.png',
-        f'static/attributes/eyes/{eyes}.png',
-        f'static/attributes/accessory/{accessory}.png',
-        f'static/attributes/clothes/{clothes}.png',
-        f'static/attributes/hats/{hats}.png',
-        f'static/attributes/mouth/{mouth}.png',
-        f'static/attributes/ears/{ears}.png'
+        f'app/static/attributes/background/{background}.png',
+        f'app/static/attributes/body/{body}.png',
+        f'app/static/attributes/eyes/{eyes}.png',
+        f'app/static/attributes/ears/{ears}.png',
+        f'app/static/attributes/clothes/{clothes}.png',
+        f'app/static/attributes/mouth/{mouth}.png',
+        f'app/static/attributes/hats/{hats}.png',
+        f'app/static/attributes/accessories/{accessory}.png'
     ]
 
     img = combine_layers(paths)

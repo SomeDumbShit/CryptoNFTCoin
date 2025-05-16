@@ -5,7 +5,7 @@
     {% if preview_url %}
         <img src="{{ preview_url }}" style="max-width: 300px;">
     {% endif %}
-    <form method="GET" action="{{ url_for('main.create_art') }}">
+    <form method="POST" action="{{ url_for('main.create_art') }}">
     <label>Background:</label>
     <select name="background">
         {% for bg in attributes['backgrounds'] %}
@@ -56,14 +56,17 @@
     </select><br>
 
     <label>Accessories:</label>
-    <select name="accessories">
-        {% for accessories in attributes['accessories'] %}
-            <option value="{{ accessories }}" {% if accessories == selected.accessories %}selected{% endif %}>{{ accessories }}</option>
+    <select name="accessory">
+        {% for accessory in attributes['accessories'] %}
+            <option value="{{ accessory }}" {% if accessory == selected.accessory %}selected{% endif %}>{{ accessory }}</option>
         {% endfor %}
-    </select><br>
+    </select><br><br>
 
-
-    <button type="submit" name="action" value="preview">Показать превью</button>
-    <button type="submit" name="action" value="save">Сохранить арт</button>
+    <label>Price</label><br>
+    <label>
+        <input type="number" name="price" placeholder="Количество RYT">
+    </label><br>
+    <button type="submit" name="action" value="preview">Preview</button>
+    <button type="submit" name="action" value="save">Save</button>
 </form>
 {% endblock %}

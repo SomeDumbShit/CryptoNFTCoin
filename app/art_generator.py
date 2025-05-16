@@ -9,6 +9,7 @@ def combine_layers(attributes):
     result_image = Image.open(attributes[0]).convert("RGBA")
 
     for path in attributes[1:]:
+        if 'none' in path: continue
         layer = Image.open(path).convert("RGBA")
         result_image = Image.alpha_composite(result_image, layer)
 
