@@ -14,6 +14,17 @@ class TransactionType:
     AUCTION_BID = 'auction_bid'
     ART_PURCHASE = 'art_purchase'
 
+class TransactionsFee: # в виде долей
+    TRANSFER = 0.01
+    PURCHASE = 0
+    SELL = 0.05
+    REWARD = 0
+    BURN = 0
+    MINT = 0
+    CASE_OPEN = 0
+    AUCTION_BID = 0.01
+    ART_PURCHASE = 0.01
+
 
 # добавление транзакции в бд
 def log_transaction(*, amount, transaction_type, sender_id=None, recipient_id=None, art_id=None, meta=None):

@@ -2,35 +2,71 @@
 {% block content %}
 <link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
     <h2>Create Your Art</h2>
-    <form method="POST">
-        <label>Background:</label>
-        <select name="background">
-            {% for background in attributes['backgrounds'] %}
-                <option value="{{ background }}">{{ background }}</option>
-            {% endfor %}
-        </select><br>
+    {% if preview_url %}
+        <img src="{{ preview_url }}" style="max-width: 300px;">
+    {% endif %}
+    <form method="POST" action="{{ url_for('main.create_art') }}">
+    <label>Background:</label>
+    <select name="background">
+        {% for bg in attributes['backgrounds'] %}
+            <option value="{{ bg }}" {% if bg == selected.background %}selected{% endif %}>{{ bg }}</option>
+        {% endfor %}
+    </select><br>
 
-        <label>Body:</label>
-        <select name="body">
-            {% for body in attributes['bodies'] %}
-                <option value="{{ body }}">{{ body }}</option>
-            {% endfor %}
-        </select><br>
+    <label>Body:</label>
+    <select name="body">
+        {% for body in attributes['bodies'] %}
+            <option value="{{ body }}" {% if body == selected.body %}selected{% endif %}>{{ body }}</option>
+        {% endfor %}
+    </select><br>
 
-        <label>Eyes:</label>
-        <select name="eyes">
-            {% for eyes in attributes['eyes'] %}
-                <option value="{{ eyes }}">{{ eyes }}</option>
-            {% endfor %}
-        </select><br>
+    <label>Eyes:</label>
+    <select name="eyes">
+        {% for eyes in attributes['eyes'] %}
+            <option value="{{ eyes }}" {% if eyes == selected.eyes %}selected{% endif %}>{{ eyes }}</option>
+        {% endfor %}
+    </select><br>
 
-        <label>Accessories:</label>
-        <select name="accessory">
-            {% for accessory in attributes['accessories'] %}
-                <option value="{{ accessory }}">{{ accessory }}</option>
-            {% endfor %}
-        </select><br>
+    <label>Ears:</label>
+    <select name="ears">
+        {% for ears in attributes['ears'] %}
+            <option value="{{ ears }}" {% if ears == selected.ears %}selected{% endif %}>{{ ears }}</option>
+        {% endfor %}
+    </select><br>
 
-        <button type="submit">Create Artwork</button>
-    </form>
+    <label>Mouth:</label>
+    <select name="mouth">
+        {% for mouth in attributes['mouth'] %}
+            <option value="{{ mouth }}" {% if mouth == selected.mouth %}selected{% endif %}>{{ mouth }}</option>
+        {% endfor %}
+    </select><br>
+
+    <label>Clothes:</label>
+    <select name="clothes">
+        {% for clothes in attributes['clothes'] %}
+            <option value="{{ clothes }}" {% if clothes == selected.clothes %}selected{% endif %}>{{ clothes }}</option>
+        {% endfor %}
+    </select><br>
+
+    <label>Hats:</label>
+    <select name="hats">
+        {% for hats in attributes['hats'] %}
+            <option value="{{ hats }}" {% if hats == selected.hats %}selected{% endif %}>{{ hats }}</option>
+        {% endfor %}
+    </select><br>
+
+    <label>Accessories:</label>
+    <select name="accessory">
+        {% for accessory in attributes['accessories'] %}
+            <option value="{{ accessory }}" {% if accessory == selected.accessory %}selected{% endif %}>{{ accessory }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label>Price</label><br>
+    <label>
+        <input type="number" name="price" placeholder="Количество RYT">
+    </label><br>
+    <button type="submit" name="action" value="preview">Preview</button>
+    <button type="submit" name="action" value="save">Save</button>
+</form>
 {% endblock %}

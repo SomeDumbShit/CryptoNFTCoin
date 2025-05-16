@@ -6,7 +6,7 @@
 <link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
 <h1>Маркетплейс артов</h1>
     <h3>Текущая цена RYT: {{ token_price }} USD</h3>
-    <h3>Ваш баланс: {{ balance }}RYT = {{ token_price * balance }} USD</h3>
+    <h3>Ваш баланс: {{ balance }}RYT = {{ balance_usd }} USD</h3>
     <form method="POST" action="{{ url_for('main.buy_token') }}">
         <label>Купить RYT (доступно: {{ available_tokens }})</label><br>
         <label>

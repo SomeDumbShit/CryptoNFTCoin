@@ -1,7 +1,9 @@
-import os
 import random
-
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, send_file
+import os
+from app.extensions import db
+from .art_generator import combine_layers
+from io import BytesIO
 from flask import render_template, redirect, url_for, flash
 from flask_login import current_user
 from flask_login import login_required
@@ -14,6 +16,7 @@ main = Blueprint('main', __name__)
 root_path = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(root_path, 'static/uploads/arts')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -31,50 +34,114 @@ def home():
     balance = round(db.session.query(User).get(user_id).balance, 2)
     token_price = round(economy.get_token_price(), 4)
     available_tokens = economy.get_max_supply() - economy.get_total_supply()
+    balance_usd = round(token_price * balance, 2)
     arts = Art.query.all()
     return render_template('home.html', arts=arts, balance=balance, token_price=token_price,
-                           available_tokens=available_tokens)
+                           available_tokens=available_tokens, balance_usd=balance_usd)
 
 
 art_attributes = {
-    'backgrounds': ['Sds', 'Off.png', 'Sds.png'],
-    'bodies': ['Sds.png', 'Off.png', 'Sds.png'],
-    'eyes': ['Sds.png', 'Off.png', 'Sds.png'],
-    'accessories': ['Sds.png', 'Off.png', 'Sds.png']
+    'backgrounds': ['green', 'purple', 'bamboo'],
+    'bodies': ['panda'],
+    'eyes': ['angry_eyes', 'star_eyes'],
+    'ears': ['black_ears'],
+    'mouth': ['cigar', 'joyful', 'singing'],
+    'clothes': ['none', 'blaze'],
+    'hats': ['none', 'clown_hat', 'cylinder', 'king', 'purple_hat', 'red_hat'],
+    'accessories': ['none', 'ring']
 }
 
 
 @main.route('/create_art', methods=['GET', 'POST'])
 @login_required
 def create_art():
-    background = random.choice(art_attributes['backgrounds'])
-    body = random.choice(art_attributes['bodies'])
-    eyes = random.choice(art_attributes['eyes'])
-    accessory = random.choice(art_attributes['accessories'])
-    art_metadata = f'{background}, {body}, {eyes}, {accessory}'
+    selected = {
+        'background': request.form.get('background', 'green'),
+        'body': request.form.get('body', 'panda'),
+        'eyes': request.form.get('eyes', 'angry_eyes'),
+        'ears': request.form.get('ears', 'black_ears'),
+        'mouth': request.form.get('mouth', 'joyful'),
+        'clothes': request.form.get('clothes', 'blaze'),
+        'hats': request.form.get('hats', 'none'),
+        'accessory': request.form.get('accessory', 'none')
+    }
 
-    if request.method == 'POST':
-        background = request.form.get('background')
-        body = request.form.get('body')
-        eyes = request.form.get('eyes')
-        accessory = request.form.get('accessory')
-        art_metadata = f'{background}, {body}, {eyes}, {accessory}'
+    preview_url = None
+    if request.form.get('action') == 'preview':
+        preview_url = url_for('main.preview_image',
+                              background=selected['background'],
+                              body=selected['body'],
+                              eyes=selected['eyes'],
+                              accessory=selected['accessory'],
+                              ears=selected['ears'],
+                              mouth=selected['mouth'],
+                              clothes=selected['clothes'],
+                              hats=selected['hats']
+                              )
+    elif request.form.get('action') == 'save':
+        art_price = request.form.get('price')
+        if not art_price:
+            flash('Назначьте цену арта', 'danger')
+        else:
+            paths = [
+                f'app/static/attributes/background/{selected['background']}.png',
+                f'app/static/attributes/body/{selected['body']}.png',
+                f'app/static/attributes/eyes/{selected['eyes']}.png',
+                f'app/static/attributes/ears/{selected['ears']}.png',
+                f'app/static/attributes/clothes/{selected['clothes']}.png',
+                f'app/static/attributes/mouth/{selected['mouth']}.png',
+                f'app/static/attributes/hats/{selected['hats']}.png',
+                f'app/static/attributes/accessories/{selected['accessory']}.png'
+            ]
+            img = combine_layers(paths)
+            img_dir = os.path.join(UPLOAD_FOLDER, 'arts')
+            os.makedirs(img_dir, exist_ok=True)
+            img.save(os.path.join(img_dir, f'{'_'.join(selected.values())}.png'))
+            new_art = Art(
+                owner_id=current_user.id,
+                image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
+                art_metadata=', '.join(selected.values()),
+                status='available',
+                price=art_price,
+                views=0
+            )
+            new_art.owner_id = current_user.id
+            db.session.add(new_art)
+            db.session.commit()
+            flash('Your artwork has been saved!', 'success')
+            return redirect(url_for('main.home'))
 
-        new_art = Art(
-            owner_id=current_user.id,
-            image_path=f'{background}_{body}_{eyes}_{accessory}.png',
-            art_metadata=art_metadata,
-            status='available',
-            price=10,
-            views=0
-        )
-        new_art.owner_id = current_user.id
-        db.session.add(new_art)
-        db.session.commit()
-        flash('Your artwork has been saved!', 'success')
-        return redirect(url_for('main.home'))
+    return render_template('create_art.html', attributes=art_attributes, selected=selected, preview_url=preview_url)
 
-    return render_template('create_art.html', attributes=art_attributes, art_metadata=art_metadata)
+
+@main.route('/preview')
+def preview_image():
+    background = request.args.get('background', 'green')
+    body = request.args.get('body', 'panda')
+    eyes = request.args.get('eyes', 'angry_eyes')
+    accessory = request.args.get('accessory', 'none')
+    ears = request.args.get('ears', 'black_ears')
+    mouth = request.args.get('mouth', 'joyful')
+    clothes = request.args.get('clothes', 'none')
+    hats = request.args.get('hats', 'none')
+
+    paths = [
+        f'app/static/attributes/background/{background}.png',
+        f'app/static/attributes/body/{body}.png',
+        f'app/static/attributes/eyes/{eyes}.png',
+        f'app/static/attributes/ears/{ears}.png',
+        f'app/static/attributes/clothes/{clothes}.png',
+        f'app/static/attributes/mouth/{mouth}.png',
+        f'app/static/attributes/hats/{hats}.png',
+        f'app/static/attributes/accessories/{accessory}.png'
+    ]
+
+    img = combine_layers(paths)
+    img_io = BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/png')
 
 
 @main.route('/buy_art/<int:art_id>', methods=['POST'])
@@ -224,7 +291,9 @@ def burn_emission():
         flash(f"Недостаточно RYT для сжигания", category='danger')
     return redirect(url_for('main.home'))
 
+
 from app.forms import AvatarUploadForm
+
 
 @main.route('/profile')
 @login_required
@@ -234,6 +303,7 @@ def profile():
     form = AvatarUploadForm()
     return render_template('profile.html', user=current_user, user_arts=user_arts, avatar_form=form)
 
+
 @main.route('/admin/mint_emission', methods=['POST'])
 @login_required
 def mint_emission():
@@ -241,6 +311,7 @@ def mint_emission():
     mint_tokens(current_user.id, mint_amount)
     flash(f"{mint_amount} RYT было успешно выпущено", category='success')
     return redirect(url_for('main.admin_panel'))
+
 
 @main.route('/upload_avatar', methods=['POST'])
 @login_required
@@ -257,12 +328,14 @@ def upload_avatar():
         filepath = os.path.join(avatar_dir, filename)
         file.save(filepath)
 
+        # Сохраняем путь относительно /static
         current_user.avatar = f'uploads/avatars/{filename}'
         db.session.commit()
 
         return redirect(url_for('main.profile'))
 
     return "No file uploaded", 400
+
 
 @main.route('/buy_token', methods=['POST'])
 @login_required
@@ -301,5 +374,5 @@ def token_stats():
     burned_supply = economy.get_burned_supply()
     market_cap = economy.get_market_cap()
     return render_template('token_stats.html', balance=balance, token_price=token_price,
-                           total_supply=total_supply,  circulating_supply=circulating_supply, max_supply=max_supply,
+                           total_supply=total_supply, circulating_supply=circulating_supply, max_supply=max_supply,
                            burned_supply=burned_supply, market_cap=market_cap)
