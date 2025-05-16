@@ -1,7 +1,9 @@
-import os
 import random
-
-from flask import Blueprint, request, current_app
+from flask import Blueprint, request, current_app, send_file
+import os
+from app.extensions import db
+from .art_generator import combine_layers
+from io import BytesIO
 from flask import render_template, redirect, url_for, flash
 from flask_login import current_user
 from flask_login import login_required
@@ -14,6 +16,7 @@ main = Blueprint('main', __name__)
 root_path = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(root_path, 'static/uploads/arts')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -31,29 +34,51 @@ def home():
     balance = round(db.session.query(User).get(user_id).balance, 2)
     token_price = round(economy.get_token_price(), 4)
     available_tokens = economy.get_max_supply() - economy.get_total_supply()
+    balance_usd = round(token_price * balance, 2)
     arts = Art.query.all()
     return render_template('home.html', arts=arts, balance=balance, token_price=token_price,
-                           available_tokens=available_tokens)
+                           available_tokens=available_tokens, balance_usd=balance_usd)
 
 
 art_attributes = {
-    'backgrounds': ['Sds', 'Off.png', 'Sds.png'],
-    'bodies': ['Sds.png', 'Off.png', 'Sds.png'],
-    'eyes': ['Sds.png', 'Off.png', 'Sds.png'],
-    'accessories': ['Sds.png', 'Off.png', 'Sds.png']
+    'backgrounds': ['green', 'purple', 'bamboo'],
+    'bodies': ['panda'],
+    'eyes': ['angry_eyes', 'star_eyes'],
+    'ears': ['black_ears'],
+    'mouth': ['cigar', 'joyful', 'singing'],
+    'clothes': ['blaze'],
+    'hats': ['clown_hat', 'cylinder', 'king', 'purple_hat', 'red_hat'],
+    'accessories': ['ring']
 }
 
 
 @main.route('/create_art', methods=['GET', 'POST'])
 @login_required
 def create_art():
-    background = random.choice(art_attributes['backgrounds'])
-    body = random.choice(art_attributes['bodies'])
-    eyes = random.choice(art_attributes['eyes'])
-    accessory = random.choice(art_attributes['accessories'])
-    art_metadata = f'{background}, {body}, {eyes}, {accessory}'
+    selected = {
+        'background': request.args.get('background', 'green'),
+        'body': request.args.get('body', 'panda'),
+        'eyes': request.args.get('eyes', 'angry_eyes'),
+        'ears': request.args.get('ears', 'black_ears'),
+        'mouth': request.args.get('mouth', 'joyful'),
+        'clothes': request.args.get('clothes', 'blaze'),
+        'hats': request.args.get('hats', 'none'),
+        'accessory': request.args.get('accessory', 'none')
+    }
 
-    if request.method == 'POST':
+    preview_url = None
+    if request.args.get('action') == 'preview':
+        preview_url = url_for('main.preview_image',
+                              background=selected['background'],
+                              body=selected['body'],
+                              eyes=selected['eyes'],
+                              accessory=selected['accessory'],
+                              ears=selected['ears'],
+                              mouth=selected['mouth'],
+                              clothes=selected['clothes'],
+                              hats=selected['hats']
+                              )
+    '''if request.method == 'POST':
         background = request.form.get('background')
         body = request.form.get('body')
         eyes = request.form.get('eyes')
@@ -72,9 +97,39 @@ def create_art():
         db.session.add(new_art)
         db.session.commit()
         flash('Your artwork has been saved!', 'success')
-        return redirect(url_for('main.home'))
+        return redirect(url_for('main.home'))'''
 
-    return render_template('create_art.html', attributes=art_attributes, art_metadata=art_metadata)
+    return render_template('create_art.html', attributes=art_attributes, selected=selected, preview_url=preview_url)
+
+
+@main.route('/preview')
+def preview_image():
+    background = request.args.get('background', 'green')
+    body = request.args.get('body', 'panda')
+    eyes = request.args.get('eyes', 'angry_eyes')
+    accessory = request.args.get('accessory', 'none')
+    ears = request.args.get('ears', 'black_ears')
+    mouth = request.args.get('mouth', 'joyful')
+    clothes = request.args.get('clothes', 'blaze')
+    hats = request.args.get('hats', 'none')
+
+    paths = [
+        f'static/attributes/background/{background}.png',
+        f'static/attributes/body/{body}.png',
+        f'static/attributes/eyes/{eyes}.png',
+        f'static/attributes/accessory/{accessory}.png',
+        f'static/attributes/clothes/{clothes}.png',
+        f'static/attributes/hats/{hats}.png',
+        f'static/attributes/mouth/{mouth}.png',
+        f'static/attributes/ears/{ears}.png'
+    ]
+
+    img = combine_layers(paths)
+    img_io = BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/png')
 
 
 @main.route('/buy_art/<int:art_id>', methods=['POST'])
@@ -224,7 +279,9 @@ def burn_emission():
         flash(f"Недостаточно RYT для сжигания", category='danger')
     return redirect(url_for('main.home'))
 
+
 from app.forms import AvatarUploadForm
+
 
 @main.route('/profile')
 @login_required
@@ -234,6 +291,7 @@ def profile():
     form = AvatarUploadForm()
     return render_template('profile.html', user=current_user, user_arts=user_arts, avatar_form=form)
 
+
 @main.route('/admin/mint_emission', methods=['POST'])
 @login_required
 def mint_emission():
@@ -241,6 +299,7 @@ def mint_emission():
     mint_tokens(current_user.id, mint_amount)
     flash(f"{mint_amount} RYT было успешно выпущено", category='success')
     return redirect(url_for('main.admin_panel'))
+
 
 @main.route('/upload_avatar', methods=['POST'])
 @login_required
@@ -257,12 +316,14 @@ def upload_avatar():
         filepath = os.path.join(avatar_dir, filename)
         file.save(filepath)
 
+        # Сохраняем путь относительно /static
         current_user.avatar = f'uploads/avatars/{filename}'
         db.session.commit()
 
         return redirect(url_for('main.profile'))
 
     return "No file uploaded", 400
+
 
 @main.route('/buy_token', methods=['POST'])
 @login_required
@@ -301,5 +362,5 @@ def token_stats():
     burned_supply = economy.get_burned_supply()
     market_cap = economy.get_market_cap()
     return render_template('token_stats.html', balance=balance, token_price=token_price,
-                           total_supply=total_supply,  circulating_supply=circulating_supply, max_supply=max_supply,
+                           total_supply=total_supply, circulating_supply=circulating_supply, max_supply=max_supply,
                            burned_supply=burned_supply, market_cap=market_cap)
