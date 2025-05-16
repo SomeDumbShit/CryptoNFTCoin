@@ -1,37 +1,73 @@
-
 {% extends "layout.html" %}
 {% block title %}Личный кабинет{% endblock %}
 
 {% block content %}
-<form method="POST" enctype="multipart/form-data" action="{{ url_for('main.upload_avatar') }}">
-  {{ avatar_form.hidden_tag() }}
-  <div class="mb-3">
-    {{ avatar_form.avatar.label(class="form-label") }}
-    {{ avatar_form.avatar(class="form-control") }}
-  </div>
-  {{ avatar_form.submit(class="btn btn-primary") }}
-</form>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
+
+<style>
+  .kaskat {
+    border-radius: 100px;
+    border: 3px solid var(--text);
+    box-shadow: 0 0 10px #666;
+  }
+
+  .glow-border {
+    border: 2px solid var(--glow);
+    box-shadow: 0 0 10px var(--glow), 0 0 20px var(--glow);
+  }
+
+  .icon-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .jal {
+    margin-left: 20px;
+  }
+
+  .gradient-bg {
+    background: linear-gradient(270deg, #48c6ef, #6f86d6, #b06ab3);
+    background-size: 600% 600%;
+    animation: gradientShift 10s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+</style>
+
+<script src="{{ url_for('static', filename='js/theme-toggle.js') }}"></script>
+
 
 <div class="container py-5">
   <div class="card shadow-lg">
     <div class="card-body">
-      <div class="d-flex align-items-center mb-4">
-        <style>
-           .kaskat {
-            border-radius: 100px;
-            border: 3px solid dark;
-            box-shadow: 0 0 10px #666;
-           }
-          .jal {
-            margin-left: 20px
-            }
-        </style>
-        <img src="{{ url_for('static', filename=user.avatar) }}" alt="Avatar" width="120"  height= "120" class="kaskat">
-        <div>
-          <h3 class="jal">{{ current_user.username }} </h3>
-          <p class="jal">Email: {{ current_user.email }}</p>
-          <p class="jal">Баланс: <strong>{{ current_user.balance }}</strong> 💰</p>
-        </div>
+      <div class="d-flex align-items-center mb-4 gradient-bg p-4 rounded shadow-sm">
+                <form id="avatar-form" method="POST" enctype="multipart/form-data" action="{{ url_for('main.upload_avatar') }}">
+          {{ avatar_form.hidden_tag() }}
+
+          <input type="file" id="avatar-input" name="avatar" accept="image/*" style="display: none;" onchange="document.getElementById('avatar-form').submit();">
+
+          <div class="d-flex align-items-center rounded">
+            <label for="avatar-input" style="cursor: pointer; margin: 0;">
+              <img src="{{ url_for('static', filename=user.avatar) }}" alt="Avatar" width="140" height="140" class="kaskat">
+            </label>
+
+            <div class="ms-4 text-light">
+              <h3>{{ current_user.username }}</h3>
+              <p class="icon-info" title="Ваш Email">
+                <i class="bi bi-envelope-fill"></i> {{ current_user.email }}
+              </p>
+              <p class="icon-info" title="Баланс пользователя">
+                <i class="bi bi-wallet2"></i> <strong>{{ current_user.balance }}</strong>
+              </p>
+            </div>
+          </div>
+        </form>
       </div>
 
       <hr>
@@ -41,16 +77,21 @@
         <div class="row">
           {% for art in user_arts %}
             <div class="col-md-4 mb-4">
-              <div class="card h-100 shadow-sm">
+              <div class="card h-100 shadow-sm {% if 'rare' in art.art_metadata.lower() or art.status == 'legendary' %}glow-border{% endif %}">
                 <a href="{{ url_for('main.view_art', art_id=art.id) }}">
-                    <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
-
+                  <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
                 </a>
                 <div class="card-body">
                   <h5 class="card-title">{{ art.art_metadata }}</h5>
-                  <p class="card-text text-muted">Статус: {{ art.status }}</p>
-                  <p class="card-text">Цена: <strong>{{ art.price }}</strong> 💸</p>
-                  <p class="card-text">Просмотры: {{ art.views }}</p>
+                  <p class="card-text text-muted icon-info" title="Статус арта">
+                    <i class="bi bi-star-fill text-warning"></i> {{ art.status }}
+                  </p>
+                  <p class="card-text icon-info" title="Цена">
+                    <i class="bi bi-cash-stack text-success"></i> <strong>{{ art.price }}</strong>
+                  </p>
+                  <p class="card-text icon-info" title="Просмотры">
+                    <i class="bi bi-eye"></i> {{ art.views }}
+                  </p>
                 </div>
               </div>
             </div>

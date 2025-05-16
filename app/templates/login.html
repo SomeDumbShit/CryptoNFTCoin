@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
+<link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
 <h2>Login</h2>
 <form method="POST">
   {{ form.hidden_tag() }}
