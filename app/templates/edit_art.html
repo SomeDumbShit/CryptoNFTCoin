@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
+<link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
 <div class="container mt-4">
     <h2>Редактировать арт</h2>
     <form method="POST" enctype="multipart/form-data">

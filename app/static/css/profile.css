@@ -1,0 +1,73 @@
+body {
+  background: var(--bg);
+  background-attachment: fixed;
+  color: var(--text);
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  color: var(--text);
+}
+
+.card-title,
+.card-text,
+h3,
+h4,
+p {
+  color: var(--text);
+}
+
+.card-body {
+  padding: 25px;
+}
+
+.kaskat {
+  border-radius: 100px;
+  border: 3px solid var(--text);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: transform 0.3s ease;
+}
+
+.kaskat:hover {
+  transform: scale(1.05);
+}
+
+.jal {
+  margin-left: 20px;
+}
+
+.profile-actions .btn {
+  background: var(--accent);
+  border: none;
+  border-radius: 30px;
+  color: var(--bg);
+  font-weight: 600;
+  padding: 10px 25px;
+  transition: background 0.3s ease;
+}
+
+.profile-actions .btn:hover {
+  background: var(--glow);
+}
+
+.card.h-100 {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+}
+
+.card.h-100:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.card img {
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  object-fit: cover;
+  max-height: 220px;
+}

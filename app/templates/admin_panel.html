@@ -1,5 +1,7 @@
 {% extends "layout.html" %}
 {% block content %}
+<link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
+
     <h2>Admin Panel</h2>
     <h3>Текущая цена RYT: {{ token_price }} USD</h3>
     <form method="POST" action="{{ url_for('main.mint_emission') }}">
