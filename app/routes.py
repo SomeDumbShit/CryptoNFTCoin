@@ -9,7 +9,7 @@ from flask_login import current_user
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 
-from .models import Art, Quest
+from .models import Art, Quest, UserQuest
 from .transactions import *
 
 main = Blueprint('main', __name__)
@@ -108,10 +108,20 @@ def create_art():
             )
             db.session.add(new_art)
 
-            # Проверка квеста "Создать первую NFT"
             quest = Quest.query.filter_by(description="Create your first NFT").first()
+
+            # Если квеста нет - создаем его
+            if not quest:
+                quest = Quest(
+                    description="Create your first NFT",
+                    reward=50,
+                    condition="create_art"
+                )
+                db.session.add(quest)
+                db.session.commit()
+
+
             if quest:
-                # Проверяем, есть ли у пользователя этот квест
                 user_quest = UserQuest.query.filter_by(
                     user_id=current_user.id,
                     quest_id=quest.id
@@ -121,13 +131,10 @@ def create_art():
                 if not user_quest:
                     # Награда за первое выполнение
                     current_user.balance += quest.reward
-
-                    # Отмечаем квест как выполненный
                     db.session.add(UserQuest(
                         user_id=current_user.id,
                         quest_id=quest.id,
-                        status='completed',
-                        completed_at=datetime.utcnow()
+                        status='completed'
                     ))
 
                     flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
