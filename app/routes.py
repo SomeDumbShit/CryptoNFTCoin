@@ -86,7 +86,12 @@ def create_art():
             paths = [
                 f'app/static/attributes/background/{selected["background"]}.png',
                 f'app/static/attributes/body/{selected["body"]}.png',
-                # ... остальные слои ...
+                f'app/static/attributes/eyes/{selected["eyes"]}.png',
+                f'app/static/attributes/ears/{selected["ears"]}.png',
+                f'app/static/attributes/clothes/{selected["clothes"]}.png',
+                f'app/static/attributes/mouth/{selected["mouth"]}.png',
+                f'app/static/attributes/hats/{selected["hats"]}.png',
+                f'app/static/attributes/accessories/{selected["accessory"]}.png'
             ]
             img = combine_layers(paths)
             img_dir = os.path.join(UPLOAD_FOLDER, 'arts')
