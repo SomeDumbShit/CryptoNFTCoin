@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
+
+<div class="container mt-4">
+    <h2>Quests</h2>
+    
+    <div class="card mb-3 {% if quest_completed %}border-success{% endif %}">
+        <div class="card-body">
+            <h5 class="card-title">
+                {% if quest_completed %}
+                    ✅ Create your first NFT
+                {% else %}
+                    🎨 Create your first NFT
+                {% endif %}
+            </h5>
+            <p class="card-text">
+                Create and save your first NFT artwork to earn <strong>{{ quest_reward }} RYT</strong>.
+            </p>
+            {% if not quest_completed %}
+                <a href="{{ url_for('main.create_art') }}" class="btn btn-primary">
+                    Start Creating
+                </a>
+            {% else %}
+                <span class="badge bg-success">Completed</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

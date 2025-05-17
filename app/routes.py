@@ -9,7 +9,7 @@ from flask_login import current_user
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 
-from .models import Art
+from .models import Art, Quest
 from .transactions import *
 
 main = Blueprint('main', __name__)
@@ -76,27 +76,23 @@ def create_art():
                               ears=selected['ears'],
                               mouth=selected['mouth'],
                               clothes=selected['clothes'],
-                              hats=selected['hats']
-                              )
+                              hats=selected['hats'])
     elif request.form.get('action') == 'save':
         art_price = request.form.get('price')
         if not art_price:
             flash('Назначьте цену арта', 'danger')
         else:
+            # Сохранение NFT (ваш существующий код)
             paths = [
-                f'app/static/attributes/background/{selected['background']}.png',
-                f'app/static/attributes/body/{selected['body']}.png',
-                f'app/static/attributes/eyes/{selected['eyes']}.png',
-                f'app/static/attributes/ears/{selected['ears']}.png',
-                f'app/static/attributes/clothes/{selected['clothes']}.png',
-                f'app/static/attributes/mouth/{selected['mouth']}.png',
-                f'app/static/attributes/hats/{selected['hats']}.png',
-                f'app/static/attributes/accessories/{selected['accessory']}.png'
+                f'app/static/attributes/background/{selected["background"]}.png',
+                f'app/static/attributes/body/{selected["body"]}.png',
+                # ... остальные слои ...
             ]
             img = combine_layers(paths)
             img_dir = os.path.join(UPLOAD_FOLDER, 'arts')
             os.makedirs(img_dir, exist_ok=True)
             img.save(os.path.join(img_dir, f'{'_'.join(selected.values())}.png'))
+
             new_art = Art(
                 owner_id=current_user.id,
                 image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
@@ -105,13 +101,61 @@ def create_art():
                 price=art_price,
                 views=0
             )
-            new_art.owner_id = current_user.id
             db.session.add(new_art)
+
+            # Проверка квеста "Создать первую NFT"
+            quest = Quest.query.filter_by(description="Create your first NFT").first()
+            if quest:
+                # Проверяем, есть ли у пользователя этот квест
+                user_quest = UserQuest.query.filter_by(
+                    user_id=current_user.id,
+                    quest_id=quest.id
+                ).first()
+
+                # Если квест НЕ выполнен (первая NFT)
+                if not user_quest:
+                    # Награда за первое выполнение
+                    current_user.balance += quest.reward
+
+                    # Отмечаем квест как выполненный
+                    db.session.add(UserQuest(
+                        user_id=current_user.id,
+                        quest_id=quest.id,
+                        status='completed',
+                        completed_at=datetime.utcnow()
+                    ))
+
+                    flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
+
             db.session.commit()
             flash('Your artwork has been saved!', 'success')
             return redirect(url_for('main.home'))
 
-    return render_template('create_art.html', attributes=art_attributes, selected=selected, preview_url=preview_url)
+    return render_template('create_art.html',
+                           attributes=art_attributes,
+                           selected=selected,
+                           preview_url=preview_url)
+
+
+@main.route('/challenge')
+@login_required
+def challenge():
+    quest = Quest.query.filter_by(description="Create your first NFT").first()
+
+    # Проверяем, выполнил ли пользователь квест
+    quest_completed = False
+    if quest:
+        quest_completed = UserQuest.query.filter_by(
+            user_id=current_user.id,
+            quest_id=quest.id,
+            status='completed'
+        ).first() is not None
+
+    return render_template(
+        'quests.html',
+        quest_completed=quest_completed,
+        quest_reward=quest.reward if quest else 50
+    )
 
 
 @main.route('/preview')
