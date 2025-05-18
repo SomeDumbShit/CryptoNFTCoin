@@ -5,9 +5,8 @@
     <div class="row">
         <div class="col-md-6">
             <a href="{{ url_for('main.view_art', art_id=art.id) }}">
-                    <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
-
-                </a>
+                <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">
+            </a>
         </div>
         <div class="col-md-6">
             <h2>{{ art.art_metadata }}</h2>

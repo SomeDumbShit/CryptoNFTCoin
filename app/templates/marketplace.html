@@ -15,7 +15,7 @@
 
     <div class="row">
         {% for art in arts %}
-        <div class="col-md-3 mb-4">
+        <div class="col-md-2 mb-4">
             <div class="card h-100">
                 <a href="{{ url_for('main.view_art', art_id=art.id) }}">
                     <img src="{{ url_for('static', filename=art.image_path) }}?v={{ art.id }}" class="img-fluid">

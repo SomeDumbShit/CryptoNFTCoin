@@ -8,7 +8,7 @@
     <h3>Текущая цена RYT: {{ token_price }} USD</h3>
     <h3>Ваш баланс: {{ balance }}RYT = {{ balance_usd }} USD</h3>
     <form method="POST" action="{{ url_for('main.buy_token') }}">
-        <label>Купить RYT (доступно: {{ available_tokens }})</label><br>
+        <label>Купить RYT</label><br>
         <label>
             <input type="number" name="token_amount" placeholder="Количество RYT">
         </label>

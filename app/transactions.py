@@ -44,7 +44,10 @@ def log_transaction(*, amount, transaction_type, sender_id=None, recipient_id=No
 
 # награда за задание
 def reward_user(user_id, amount, metadata=None):
-    #======================     начисление награды     ===================
+    economy = get_economy()
+    economy.mint(amount)
+    user = User.query.get(user_id)
+    user.balance += amount
     return log_transaction(
         recipient_id=user_id,
         amount=amount,

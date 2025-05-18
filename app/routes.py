@@ -33,11 +33,10 @@ def home():
     user_id = current_user.id
     balance = round(db.session.query(User).get(user_id).balance, 2)
     token_price = round(economy.get_token_price(), 4)
-    available_tokens = economy.get_max_supply() - economy.get_total_supply()
     balance_usd = round(token_price * balance, 2)
     arts = Art.query.all()
     return render_template('home.html', arts=arts, balance=balance, token_price=token_price,
-                           available_tokens=available_tokens, balance_usd=balance_usd)
+                           balance_usd=balance_usd)
 
 
 art_attributes = {
@@ -61,28 +60,25 @@ def create_art():
         'eyes': request.form.get('eyes', 'angry_eyes'),
         'ears': request.form.get('ears', 'black_ears'),
         'mouth': request.form.get('mouth', 'joyful'),
-        'clothes': request.form.get('clothes', 'blaze'),
+        'clothes': request.form.get('clothes', 'none'),
         'hats': request.form.get('hats', 'none'),
         'accessory': request.form.get('accessory', 'none')
     }
 
-    preview_url = None
-    if request.form.get('action') == 'preview':
-        preview_url = url_for('main.preview_image',
-                              background=selected['background'],
-                              body=selected['body'],
-                              eyes=selected['eyes'],
-                              accessory=selected['accessory'],
-                              ears=selected['ears'],
-                              mouth=selected['mouth'],
-                              clothes=selected['clothes'],
-                              hats=selected['hats'])
-    elif request.form.get('action') == 'save':
+    preview_url = url_for('main.preview_image',
+                          background=selected['background'],
+                          body=selected['body'],
+                          eyes=selected['eyes'],
+                          accessory=selected['accessory'],
+                          ears=selected['ears'],
+                          mouth=selected['mouth'],
+                          clothes=selected['clothes'],
+                          hats=selected['hats'])
+    if request.form.get('action') == 'save':
         art_price = request.form.get('price')
         if not art_price:
             flash('Назначьте цену арта', 'danger')
         else:
-            # Сохранение NFT (ваш существующий код)
             paths = [
                 f'app/static/attributes/background/{selected["background"]}.png',
                 f'app/static/attributes/body/{selected["body"]}.png',
@@ -94,14 +90,15 @@ def create_art():
                 f'app/static/attributes/accessories/{selected["accessory"]}.png'
             ]
             img = combine_layers(paths)
-            img_dir = os.path.join(UPLOAD_FOLDER, 'arts')
-            os.makedirs(img_dir, exist_ok=True)
-            img.save(os.path.join(img_dir, f'{'_'.join(selected.values())}.png'))
-
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            img.save(os.path.join(UPLOAD_FOLDER, f'{'_'.join(selected.values())}.png'))
+            art_metadata = list(selected.values())
+            if 'none' in art_metadata:
+                art_metadata.remove('none')
             new_art = Art(
                 owner_id=current_user.id,
                 image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
-                art_metadata=', '.join(selected.values()),
+                art_metadata=', '.join(art_metadata),
                 status='available',
                 price=art_price,
                 views=0
@@ -109,7 +106,6 @@ def create_art():
             db.session.add(new_art)
 
             quest = Quest.query.filter_by(description="Create your first NFT").first()
-
             # Если квеста нет - создаем его
             if not quest:
                 quest = Quest(
@@ -119,24 +115,20 @@ def create_art():
                 )
                 db.session.add(quest)
                 db.session.commit()
-
-
             if quest:
                 user_quest = UserQuest.query.filter_by(
                     user_id=current_user.id,
                     quest_id=quest.id
                 ).first()
-
                 # Если квест НЕ выполнен (первая NFT)
                 if not user_quest:
                     # Награда за первое выполнение
-                    current_user.balance += quest.reward
+                    reward_user(current_user.id, quest.reward)
                     db.session.add(UserQuest(
                         user_id=current_user.id,
                         quest_id=quest.id,
                         status='completed'
                     ))
-
                     flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
 
             db.session.commit()

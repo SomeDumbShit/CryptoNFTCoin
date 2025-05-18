@@ -1,72 +1,127 @@
 {% extends "layout.html" %}
 {% block content %}
 <link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
-    <h2>Create Your Art</h2>
-    {% if preview_url %}
-        <img src="{{ preview_url }}" style="max-width: 300px;">
-    {% endif %}
-    <form method="POST" action="{{ url_for('main.create_art') }}">
-    <label>Background:</label>
-    <select name="background">
-        {% for bg in attributes['backgrounds'] %}
-            <option value="{{ bg }}" {% if bg == selected.background %}selected{% endif %}>{{ bg }}</option>
-        {% endfor %}
-    </select><br>
+<div class="container mt-4">
+    <h2 class="mb-4 border-bottom pb-2">Create Your Art</h2>
 
-    <label>Body:</label>
-    <select name="body">
-        {% for body in attributes['bodies'] %}
-            <option value="{{ body }}" {% if body == selected.body %}selected{% endif %}>{{ body }}</option>
-        {% endfor %}
-    </select><br>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            {% if preview_url %}
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0">Preview</h5>
+                    </div>
+                    <div class="card-body p-0 d-flex align-items-center justify-content-center">
+                        <img src="{{ preview_url }}"
+                             class="img-fluid"
+                             style="max-height: 540px; width: auto; object-fit: contain;">
+                    </div>
+                </div>
+            {% endif %}
+        </div>
 
-    <label>Eyes:</label>
-    <select name="eyes">
-        {% for eyes in attributes['eyes'] %}
-            <option value="{{ eyes }}" {% if eyes == selected.eyes %}selected{% endif %}>{{ eyes }}</option>
-        {% endfor %}
-    </select><br>
+        <div class="col-md-5">
+            <form method="POST" action="{{ url_for('main.create_art') }}" class="bg-light p-4 rounded shadow-sm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Background:</label>
+                            <select name="background" class="form-select">
+                                {% for bg in attributes['backgrounds'] %}
+                                <option value="{{ bg }}" {% if bg==selected.background %}selected{% endif %}>{{ bg }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <label>Ears:</label>
-    <select name="ears">
-        {% for ears in attributes['ears'] %}
-            <option value="{{ ears }}" {% if ears == selected.ears %}selected{% endif %}>{{ ears }}</option>
-        {% endfor %}
-    </select><br>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Body:</label>
+                            <select name="body" class="form-select">
+                                {% for body in attributes['bodies'] %}
+                                <option value="{{ body }}" {% if body==selected.body %}selected{% endif %}>{{ body }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <label>Mouth:</label>
-    <select name="mouth">
-        {% for mouth in attributes['mouth'] %}
-            <option value="{{ mouth }}" {% if mouth == selected.mouth %}selected{% endif %}>{{ mouth }}</option>
-        {% endfor %}
-    </select><br>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Eyes:</label>
+                            <select name="eyes" class="form-select">
+                                {% for eyes in attributes['eyes'] %}
+                                <option value="{{ eyes }}" {% if eyes==selected.eyes %}selected{% endif %}>{{ eyes }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <label>Clothes:</label>
-    <select name="clothes">
-        {% for clothes in attributes['clothes'] %}
-            <option value="{{ clothes }}" {% if clothes == selected.clothes %}selected{% endif %}>{{ clothes }}</option>
-        {% endfor %}
-    </select><br>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Ears:</label>
+                            <select name="ears" class="form-select">
+                                {% for ears in attributes['ears'] %}
+                                <option value="{{ ears }}" {% if ears==selected.ears %}selected{% endif %}>{{ ears }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
 
-    <label>Hats:</label>
-    <select name="hats">
-        {% for hats in attributes['hats'] %}
-            <option value="{{ hats }}" {% if hats == selected.hats %}selected{% endif %}>{{ hats }}</option>
-        {% endfor %}
-    </select><br>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Mouth:</label>
+                            <select name="mouth" class="form-select">
+                                {% for mouth in attributes['mouth'] %}
+                                <option value="{{ mouth }}" {% if mouth==selected.mouth %}selected{% endif %}>{{ mouth }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <label>Accessories:</label>
-    <select name="accessory">
-        {% for accessory in attributes['accessories'] %}
-            <option value="{{ accessory }}" {% if accessory == selected.accessory %}selected{% endif %}>{{ accessory }}</option>
-        {% endfor %}
-    </select><br><br>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Clothes:</label>
+                            <select name="clothes" class="form-select">
+                                {% for clothes in attributes['clothes'] %}
+                                <option value="{{ clothes }}" {% if clothes==selected.clothes %}selected{% endif %}>{{ clothes }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-    <label>Price</label><br>
-    <label>
-        <input type="number" name="price" placeholder="Количество RYT">
-    </label><br>
-    <button type="submit" name="action" value="preview">Preview</button>
-    <button type="submit" name="action" value="save">Save</button>
-</form>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Hats:</label>
+                            <select name="hats" class="form-select">
+                                {% for hats in attributes['hats'] %}
+                                <option value="{{ hats }}" {% if hats==selected.hats %}selected{% endif %}>{{ hats }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Accessories:</label>
+                            <select name="accessory" class="form-select">
+                                {% for accessory in attributes['accessories'] %}
+                                <option value="{{ accessory }}" {% if accessory==selected.accessory %}selected{% endif %}>{{ accessory }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top">
+                    <h5 class="mb-3 fw-bold">Price</h5>
+                    <div class="input-group mb-3">
+                        <input type="number"
+                               name="price"
+                               class="form-control"
+                               placeholder="Enter RYT amount"
+                               min="1">
+                        <span class="input-group-text">RYT</span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4 justify-content-end">
+                    <button type="submit" name="action" value="preview" class="btn btn-outline-primary">
+                        Preview
+                    </button>
+                    <button type="submit" name="action" value="save" class="btn btn-success">
+                        Save Artwork
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}
