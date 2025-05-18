@@ -134,3 +134,16 @@ def art_purchase(buyer_id, seller_id, amount, art_id):
         transaction_type=TransactionType.ART_PURCHASE,
         art_id=art_id
     )
+
+
+def buy_case_tx(user_id, amount, metadata=None):
+    economy = get_economy()
+    user = db.session.query(User).get(user_id)
+    user.balance -= amount
+    economy.burn(amount)
+    return log_transaction(
+        sender_id=user_id,
+        amount=amount,
+        transaction_type=TransactionType.CASE_OPEN,
+        meta=metadata
+    )

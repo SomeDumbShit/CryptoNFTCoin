@@ -16,8 +16,8 @@ class User(db.Model, UserMixin):
     role = db.Column(db.String(20), default='user')
     avatar = db.Column(db.String(255), default='uploads/avatars/default.png')
     attributes = db.Column(JSON, default={'background': ['green'], 'body': ['panda'], 'eyes': ['angry_eyes'],
-                                            'ears': ['black_ears'], 'mouth': ['joyful'], 'clothes': ['blaze'],
-                                            'hats': [], 'accessory': []})
+                                            'ears': ['black_ears'], 'mouth': ['joyful'], 'clothes': ['none', 'blaze'],
+                                            'hats': ['none'], 'accessory': ['none']})
     arts = db.relationship(
         'Art',
         backref='owner',

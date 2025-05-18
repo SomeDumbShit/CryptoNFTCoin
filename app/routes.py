@@ -40,14 +40,14 @@ def home():
 
 
 art_attributes = {
-    'backgrounds': ['green', 'purple', 'bamboo'],
-    'bodies': ['panda'],
+    'background': ['green', 'purple', 'bamboo'],
+    'body': ['panda'],
     'eyes': ['angry_eyes', 'star_eyes'],
     'ears': ['black_ears'],
     'mouth': ['cigar', 'joyful', 'singing'],
     'clothes': ['none', 'blaze'],
     'hats': ['none', 'clown_hat', 'cylinder', 'king', 'purple_hat', 'red_hat'],
-    'accessories': ['none', 'ring']
+    'accessory': ['none', 'ring']
 }
 
 
@@ -84,9 +84,14 @@ def create_art():
         else:
             background, body, eyes, ears, mouth, clothes, hats, accessory = list(selected.values())
             default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
-            for attribute in selected.values():
-                if attribute not in default_attributes:
-                    attributes.remove(attribute)
+            for attribute_type in attributes.keys():
+                if selected[attribute_type] not in default_attributes:
+                    attributes[attribute_type].remove(selected[attribute_type])
+
+            user = db.session.query(User).get(current_user.id)
+            user.attributes = attributes
+            print(user.attributes)
+            db.session.commit()
             paths = [
                 f'app/static/attributes/background/{background}.png',
                 f'app/static/attributes/body/{body}.png',
@@ -144,6 +149,9 @@ def create_art():
 
             flash('Your artwork has been saved!', 'success')
             return redirect(url_for('main.home'))
+
+    for attr_type in attributes.keys():
+        attributes[attr_type] = list(dict.fromkeys(attributes[attr_type]))
 
     return render_template('create_art.html',
                            attributes=attributes,
@@ -258,13 +266,20 @@ def buy_case():
         flash('Not enough currency to buy a case.', 'danger')
         return redirect(url_for('main.home'))
 
-    case_items = random.choices(
-        art_attributes['backgrounds'] + art_attributes['bodies'] + art_attributes['eyes'] + art_attributes[
-            'accessories'], k=3)
+    case_items = random.choices(sum(list(art_attributes.values()), []), k=3)
 
-    current_user.balance -= 20
+    buy_case_tx(current_user.id, 20, ', '.join(case_items))
+
+    user = db.session.query(User).get(current_user.id)
+    attributes = user.attributes
     db.session.commit()
-
+    default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
+    for attribute in case_items:
+        for attribute_type in attributes.keys():
+            if attribute not in default_attributes and attribute in art_attributes[attribute_type]:
+                attributes[attribute_type].append(attribute)
+    user.attributes = attributes
+    db.session.commit()
     flash(f'You have received: {", ".join(case_items)}', 'success')
     return redirect(url_for('main.home'))
 
