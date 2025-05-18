@@ -1,9 +1,11 @@
 import os
 
-from flask import Flask, Blueprint
-from flask_migrate import Migrate
+from flask import Flask
 from flask_login import LoginManager
+from flask_migrate import Migrate
+
 from .extensions import db
+
 migrate = Migrate()
 login_manager = LoginManager()
 basedir = os.path.abspath(os.path.dirname(__file__))
