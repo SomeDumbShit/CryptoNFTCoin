@@ -27,7 +27,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Background:</label>
                             <select name="background" class="form-select">
-                                {% for bg in attributes['backgrounds'] %}
+                                {% for bg in attributes['background'] %}
                                 <option value="{{ bg }}" {% if bg==selected.background %}selected{% endif %}>{{ bg }}</option>
                                 {% endfor %}
                             </select>
@@ -36,7 +36,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Body:</label>
                             <select name="body" class="form-select">
-                                {% for body in attributes['bodies'] %}
+                                {% for body in attributes['body'] %}
                                 <option value="{{ body }}" {% if body==selected.body %}selected{% endif %}>{{ body }}</option>
                                 {% endfor %}
                             </select>
@@ -92,7 +92,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Accessories:</label>
                             <select name="accessory" class="form-select">
-                                {% for accessory in attributes['accessories'] %}
+                                {% for accessory in attributes['accessory'] %}
                                 <option value="{{ accessory }}" {% if accessory==selected.accessory %}selected{% endif %}>{{ accessory }}</option>
                                 {% endfor %}
                             </select>
