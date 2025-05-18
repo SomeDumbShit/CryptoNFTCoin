@@ -10,6 +10,7 @@
         </div>
         <div class="col-md-6">
             <h2>{{ art.art_metadata }}</h2>
+            <p><strong>Редкость:</strong> {{ art.rarity }}</p>
             <p><strong>Описание:</strong> {{ art.description or "Нет описания." }}</p>
             <p><strong>Цена:</strong> {{ art.price }} RYT</p>
             <p><strong>Просмотры:</strong> {{ art.views }}</p>
