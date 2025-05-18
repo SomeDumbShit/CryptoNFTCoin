@@ -1,15 +1,16 @@
-import random
-from flask import Blueprint, request, current_app, send_file
 import os
-from app.extensions import db
-from .art_generator import combine_layers
+import random
 from io import BytesIO
+
+from flask import Blueprint, request, current_app, send_file
 from flask import render_template, redirect, url_for, flash
 from flask_login import current_user
 from flask_login import login_required
+from sqlalchemy.orm.attributes import flag_modified
 from werkzeug.utils import secure_filename
 
-from .models import Art, Quest, UserQuest
+from .art_generator import combine_layers
+from .models import Quest, UserQuest
 from .transactions import *
 
 main = Blueprint('main', __name__)
@@ -64,99 +65,82 @@ def create_art():
         'hats': request.form.get('hats', 'none'),
         'accessory': request.form.get('accessory', 'none')
     }
+
     user = db.session.query(User).get(current_user.id)
-    attributes = user.attributes
-    preview_url = url_for('main.preview_image',
-                          background=selected['background'],
-                          body=selected['body'],
-                          eyes=selected['eyes'],
-                          accessory=selected['accessory'],
-                          ears=selected['ears'],
-                          mouth=selected['mouth'],
-                          clothes=selected['clothes'],
-                          hats=selected['hats'])
-    if request.form.get('action') == 'save':
+    attributes = user.attributes or {}
+    default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
+
+    preview_url = url_for('main.preview_image', **selected)
+
+    if request.method == 'POST' and request.form.get('action') == 'save':
         art_price = request.form.get('price')
         art_metadata = request.form.get('Name_of_the_art')
+
         if not art_price or not art_metadata:
             flash('Заполните все поля', 'danger')
-
         else:
-            background, body, eyes, ears, mouth, clothes, hats, accessory = list(selected.values())
-            default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
-            for attribute_type in attributes.keys():
-                if selected[attribute_type] not in default_attributes:
-                    attributes[attribute_type].remove(selected[attribute_type])
-
-            user = db.session.query(User).get(current_user.id)
+            for attr_type, attr_value in selected.items():
+                if attr_value not in default_attributes:
+                    if attr_type in attributes and attr_value in attributes[attr_type]:
+                        attributes[attr_type].remove(attr_value)
             user.attributes = attributes
-            print(user.attributes)
+            flag_modified(user, "attributes")
             db.session.commit()
-            paths = [
-                f'app/static/attributes/background/{background}.png',
-                f'app/static/attributes/body/{body}.png',
-                f'app/static/attributes/eyes/{eyes}.png',
-                f'app/static/attributes/ears/{ears}.png',
-                f'app/static/attributes/clothes/{clothes}.png',
-                f'app/static/attributes/mouth/{mouth}.png',
-                f'app/static/attributes/hats/{hats}.png',
-                f'app/static/attributes/accessories/{accessory}.png']
-            img = combine_layers(paths)
-            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-            img.save(os.path.join(UPLOAD_FOLDER, f'{'_'.join(selected.values())}.png'))
 
+
+            paths = [
+                f'app/static/attributes/background/{selected["background"]}.png',
+                f'app/static/attributes/body/{selected["body"]}.png',
+                f'app/static/attributes/eyes/{selected["eyes"]}.png',
+                f'app/static/attributes/ears/{selected["ears"]}.png',
+                f'app/static/attributes/clothes/{selected["clothes"]}.png',
+                f'app/static/attributes/mouth/{selected["mouth"]}.png',
+                f'app/static/attributes/hats/{selected["hats"]}.png',
+                f'app/static/attributes/accessories/{selected["accessory"]}.png'
+            ]
+
+            os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+            filename = f"{'_'.join(selected.values())}.png"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            img = combine_layers(paths)
+            img.save(filepath)
 
             new_art = Art(
                 owner_id=current_user.id,
                 artist_id=current_user.id,
-                image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
+                image_path=f'uploads/arts/{filename}',
                 art_metadata=art_metadata,
                 status='awaiting moderation',
                 moderation_status='pending',
                 price=art_price,
                 views=0
             )
-
             db.session.add(new_art)
 
             quest = Quest.query.filter_by(description="Create your first NFT").first()
-            # Если квеста нет - создаем его
             if not quest:
-                quest = Quest(
-                    description="Create your first NFT",
-                    reward=50,
-                    condition="create_art"
-                )
+                quest = Quest(description="Create your first NFT", reward=50, condition="create_art")
                 db.session.add(quest)
                 db.session.commit()
-            if quest:
-                user_quest = UserQuest.query.filter_by(
-                    user_id=current_user.id,
-                    quest_id=quest.id
-                ).first()
-                # Если квест НЕ выполнен (первая NFT)
-                if not user_quest:
-                    # Награда за первое выполнение
-                    reward_user(current_user.id, quest.reward)
-                    db.session.add(UserQuest(
-                        user_id=current_user.id,
-                        quest_id=quest.id,
-                        status='completed'
-                    ))
-                    flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
+
+            user_quest = UserQuest.query.filter_by(user_id=current_user.id, quest_id=quest.id).first()
+            if not user_quest:
+                reward_user(current_user.id, quest.reward)
+                db.session.add(UserQuest(user_id=current_user.id, quest_id=quest.id, status='completed'))
+                flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
 
             db.session.commit()
-
             flash('Your artwork has been saved!', 'success')
             return redirect(url_for('main.home'))
 
-    for attr_type in attributes.keys():
+    for attr_type in attributes:
         attributes[attr_type] = list(dict.fromkeys(attributes[attr_type]))
 
     return render_template('create_art.html',
                            attributes=attributes,
                            selected=selected,
                            preview_url=preview_url)
+
 
 
 @main.route('/challenge')
@@ -223,32 +207,32 @@ def buy_art(art_id):
     art.status = 'sold'
     art.views += 1
     art_purchase(buyer_id=current_user.id, seller_id=art.owner_id, amount=art.price, art_id=art.id)
-    '''    buyer = current_user
-        seller = art.owner
-        artist = art.artist
+    buyer = current_user
+    seller = art.owner
+    artist = art.artist
     
-        price = art.price
-        fee_artist = int(price * 0.1)
-        seller_income = price - fee_artist
+    price = art.price
+    fee_artist = int(price * 0.1)//1
+    seller_income = price - fee_artist
     
-        buyer.balance -= price
-        seller.balance += seller_income
+    buyer.balance -= price
+    seller.balance += seller_income
     
-        if artist and artist.id != seller.id:
-            artist.balance += fee_artist
+    if artist and artist.id != seller.id:
+        artist.balance += fee_artist
     
-        art.owner = buyer
-        art.status = 'sold'
+    art.owner = buyer
+    art.status = 'sold'
     
-        tx = Transaction(
-            sender_id=buyer.id,
-            recipient_id=seller.id,
-            amount=price,
-            transaction_fee=fee_artist,
-            art_id=art.id,
-            transaction_type="purchase"
+    tx = Transaction(
+        sender_id=buyer.id,
+        recipient_id=seller.id,
+        amount=price,
+        transaction_fee=fee_artist,
+        art_id=art.id,
+        transaction_type="purchase"
         )
-    '''
+
     db.session.add(tx)
     db.session.commit()
 
@@ -262,26 +246,29 @@ def buy_art(art_id):
 @main.route('/buy_case', methods=['GET', 'POST'])
 @login_required
 def buy_case():
-    if current_user.balance < 20:
-        flash('Not enough currency to buy a case.', 'danger')
-        return redirect(url_for('main.home'))
+    if request.method == 'POST':
+        if current_user.balance < 20:
+            flash('Недостаточно средств для покупки кейса.', 'danger')
+            return redirect(url_for('main.buy_case'))
 
-    case_items = random.choices(sum(list(art_attributes.values()), []), k=3)
+        case_items = random.choices(sum(list(art_attributes.values()), []), k=3)
+        buy_case_tx(current_user.id, 20, ', '.join(case_items))
 
-    buy_case_tx(current_user.id, 20, ', '.join(case_items))
+        user = db.session.query(User).get(current_user.id)
+        attributes = user.attributes
+        db.session.commit()
+        default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
+        for attribute in case_items:
+            for attribute_type in attributes.keys():
+                if attribute not in default_attributes and attribute in art_attributes[attribute_type]:
+                    attributes[attribute_type].append(attribute)
+        user.attributes = attributes
+        db.session.commit()
+        flash(f'Вы получили: {", ".join(case_items)}', 'success')
+        return redirect(url_for('main.buy_case'))
 
-    user = db.session.query(User).get(current_user.id)
-    attributes = user.attributes
-    db.session.commit()
-    default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
-    for attribute in case_items:
-        for attribute_type in attributes.keys():
-            if attribute not in default_attributes and attribute in art_attributes[attribute_type]:
-                attributes[attribute_type].append(attribute)
-    user.attributes = attributes
-    db.session.commit()
-    flash(f'You have received: {", ".join(case_items)}', 'success')
-    return redirect(url_for('main.home'))
+    return render_template('buy_case.html')
+
 
 
 @main.route('/art/<int:art_id>')

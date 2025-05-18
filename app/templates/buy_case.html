@@ -1,10 +1,19 @@
-{% extends "layout.html" %}
+{% extends 'layout.html' %}
 {% block content %}
 <link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
-    <h2>Buy a Case</h2>
-    <p>Price: 20 currency units</p>
+<div class="container mt-5 text-center">
+    <h1 class="mb-4">🎁 Покупка Кейса</h1>
+    <p class="mb-4">При покупке кейса вы получаете возможность выиграть новые атрибуты для создания NFT</p>
 
-    <form method="POST">
-        <button type="submit">Buy Case</button>
-    </form>
+    <div class="card shadow p-4" style="max-width: 500px; margin: auto;">
+        <h4 class="mb-3">Ваш баланс: <span class="text-success">{{ current_user.balance }} 💰</span></h4>
+        <p class="mb-4">Стоимость кейса: <strong>20 💰</strong></p>
+
+        <form method="POST">
+            <button type="submit" class="btn btn-primary btn-lg">
+                🔓 Купить кейс
+            </button>
+        </form>
+    </div>
+</div>
 {% endblock %}
