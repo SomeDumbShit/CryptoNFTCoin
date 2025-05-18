@@ -12,16 +12,31 @@ class User(db.Model, UserMixin):
     password = db.Column(db.String(60), nullable=False)
     username = db.Column(db.String(100), nullable=False)
     balance = db.Column(db.Integer, default=0)
-    role = db.Column(db.String(20), default='user')  # может быть 'user', 'artist', 'admin'
+    role = db.Column(db.String(20), default='user')
     avatar = db.Column(db.String(255), default='uploads/avatars/default.png')
     attributes = db.Column(db.String(255), default='none')
-    arts = db.relationship('Art', backref='owner', lazy=True)
+
+    arts = db.relationship(
+        'Art',
+        backref='owner',
+        lazy=True,
+        foreign_keys='Art.owner_id'
+    )
+
+    arts_created = db.relationship(
+        'Art',
+        backref='artist',
+        lazy=True,
+        foreign_keys='Art.artist_id'
+    )
+
     transactions_sent = db.relationship(
         'Transaction',
         foreign_keys='Transaction.sender_id',
         backref='sender',
         lazy=True
     )
+
     transactions_received = db.relationship(
         'Transaction',
         foreign_keys='Transaction.recipient_id',
@@ -30,19 +45,24 @@ class User(db.Model, UserMixin):
     )
 
 
+
 class Art(db.Model):
     __tablename__ = 'art'
     id = db.Column(db.Integer, primary_key=True)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     image_path = db.Column(db.String(120), nullable=False)
-    status = db.Column(db.String(20), default='available')  # состояние картины 'available', 'sold', 'auction'
+    status = db.Column(db.String(20), default='available')
     art_metadata = db.Column(db.String, nullable=False)
     transactions = db.relationship('Transaction', backref='art_ref', lazy=True)
     price = db.Column(db.Integer, default=10)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    views = db.Column(db.Integer, default=0)  # для популярности
+    views = db.Column(db.Integer, default=0)
     auctions = db.relationship('Auction', backref='art', lazy=True)
     description = db.Column(db.Text)
+    moderation_status = db.Column(db.String(20), default='pending')
+    rarity = db.Column(db.String(20), default='common')
+
 
 
 class Auction(db.Model):

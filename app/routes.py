@@ -76,8 +76,10 @@ def create_art():
                           hats=selected['hats'])
     if request.form.get('action') == 'save':
         art_price = request.form.get('price')
-        if not art_price:
-            flash('Назначьте цену арта', 'danger')
+        art_metadata = request.form.get('Name_of_the_art')
+        if not art_price or not art_metadata:
+            flash('Заполните все поля', 'danger')
+
         else:
             paths = [
                 f'app/static/attributes/background/{selected["background"]}.png',
@@ -92,17 +94,19 @@ def create_art():
             img = combine_layers(paths)
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             img.save(os.path.join(UPLOAD_FOLDER, f'{'_'.join(selected.values())}.png'))
-            art_metadata = list(selected.values())
-            if 'none' in art_metadata:
-                art_metadata.remove('none')
+
+
             new_art = Art(
                 owner_id=current_user.id,
+                artist_id=current_user.id,
                 image_path=f'uploads/arts/{'_'.join(selected.values())}.png',
-                art_metadata=', '.join(art_metadata),
-                status='available',
+                art_metadata=art_metadata,
+                status='awaiting moderation',
+                moderation_status='pending',
                 price=art_price,
                 views=0
             )
+
             db.session.add(new_art)
 
             quest = Quest.query.filter_by(description="Create your first NFT").first()
@@ -192,26 +196,48 @@ def preview_image():
     return send_file(img_io, mimetype='image/png')
 
 
-@main.route('/buy_art/<int:art_id>', methods=['POST'])
+
+@main.route('/buy/<int:art_id>', methods=['POST'])
 @login_required
 def buy_art(art_id):
     art = Art.query.get_or_404(art_id)
-    if art.status == 'sold':
-        flash('Этот арт уже продан.', 'danger')
-        return redirect(url_for('main.marketplace'))
 
     if current_user.balance < art.price:
-        flash('Недостаточно валюты для покупки.', 'danger')
+        flash("Недостаточно средств", "danger")
         return redirect(url_for('main.marketplace'))
 
-    current_user.balance -= art.price
+    buyer = current_user
+    seller = art.owner
+    artist = art.artist
+
+    price = art.price
+    fee_artist = int(price * 0.1)
+    seller_income = price - fee_artist
+
+    buyer.balance -= price
+    seller.balance += seller_income
+
+    if artist and artist.id != seller.id:
+        artist.balance += fee_artist
+
+    art.owner = buyer
     art.status = 'sold'
 
-    art.views += 1
-    art_purchase(buyer_id=current_user.id, seller_id=art.owner_id, amount=art.price, art_id=art.id)
+    tx = Transaction(
+        sender_id=buyer.id,
+        recipient_id=seller.id,
+        amount=price,
+        transaction_fee=fee_artist,
+        art_id=art.id,
+        transaction_type="purchase"
+    )
 
-    flash('Вы успешно приобрели арт!', 'success')
+    db.session.add(tx)
+    db.session.commit()
+
+    flash("Покупка завершена", "success")
     return redirect(url_for('main.marketplace'))
+
 
 
 # (система кейсов)
@@ -274,10 +300,46 @@ def marketplace():
         arts = query.order_by(Art.price.asc()).all()
     elif sort_by == 'popular':
         arts = query.order_by(Art.views.desc()).all()
+    elif sort_by == 'rarity':
+        rarity_order = {'legendary': 0, 'rare': 1, 'common': 2}
+        arts = sorted(query.all(), key=lambda a: rarity_order.get(a.rarity, 3))
     else:
         arts = query.order_by(Art.created_at.desc()).all()
 
     return render_template('marketplace.html', arts=arts)
+
+
+@main.route("/admin/moderation", methods=["GET", "POST"])
+@login_required
+def moderate_arts():
+    if current_user.role != "admin":
+        flash('You do not have access to this page.', 'danger')
+        return redirect(url_for('main.home'))
+
+    if request.method == "POST":
+        id = request.form.get("id")
+        action = request.form.get("action")
+        rarity = request.form.get("rarity")
+
+        art = Art.query.get(id)
+        if not art:
+            flash("Артефакт не найден.", "danger")
+            return redirect(url_for("main.moderate_arts"))
+
+        if action == "approve":
+            art.moderation_status = "approved"
+            art.rarity = rarity
+            art.status = 'available'
+        elif action == "reject":
+            art.status = 'rejected'
+            art.moderation_status = "rejected"
+        db.session.commit()
+        flash("Статус обновлён", "success")
+        return redirect(url_for("main.moderate_arts"))
+
+    pending_arts = Art.query.filter_by(moderation_status="pending").all()
+    return render_template("moderate.html", arts=pending_arts)
+
 
 
 @main.route('/give_tokens', methods=['POST'])

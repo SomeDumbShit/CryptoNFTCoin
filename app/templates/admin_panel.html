@@ -19,6 +19,11 @@
     </ul>
 
     <h3>Arts</h3>
+
+    <a href="{{ url_for('main.moderate_arts') }}" class="btn btn-primary mb-4">
+        Перейти к модерации артов
+      </a>
+
     <ul>
         {% for art in arts %}
             <li>{{ art.art_metadata }} - {{ art.status }}</li>

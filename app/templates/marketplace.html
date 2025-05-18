@@ -10,6 +10,7 @@
             <option value="new" {% if request.args.get('sort') == 'new' %}selected{% endif %}>Новизна</option>
             <option value="price" {% if request.args.get('sort') == 'price' %}selected{% endif %}>Цена</option>
             <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>Популярность</option>
+            <option value="rarity" {% if request.args.get('sort') == 'rarity' %}selected{% endif %}>Редкость</option>
         </select>
     </form>
 
@@ -24,6 +25,7 @@
                 <div class="card-body">
                     <h5 class="card-title">{{ art.art_metadata[:30] }}</h5>
                     <p class="card-text">Цена: {{ art.price }} RYT</p>
+                    <p class="card-text">Редкость: {{ art.rarity }}</p>
                     <p class="card-text"><small>Просмотры: {{ art.views }}</small></p>
                 </div>
             </div>
