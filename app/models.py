@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from flask_login import UserMixin
+from sqlalchemy import JSON
 
 from .extensions import db
 
@@ -14,8 +15,9 @@ class User(db.Model, UserMixin):
     balance = db.Column(db.Integer, default=0)
     role = db.Column(db.String(20), default='user')
     avatar = db.Column(db.String(255), default='uploads/avatars/default.png')
-    attributes = db.Column(db.String(255), default='none')
-
+    attributes = db.Column(JSON, default={'background': ['green'], 'body': ['panda'], 'eyes': ['angry_eyes'],
+                                            'ears': ['black_ears'], 'mouth': ['joyful'], 'clothes': ['blaze'],
+                                            'hats': [], 'accessory': []})
     arts = db.relationship(
         'Art',
         backref='owner',

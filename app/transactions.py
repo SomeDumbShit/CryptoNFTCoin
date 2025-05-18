@@ -1,5 +1,5 @@
 from datetime import datetime
-from .models import Transaction, User
+from .models import Transaction, User, Art
 from .economy import get_economy
 from .extensions import db
 
@@ -108,7 +108,8 @@ def sell(seller_id, amount, comment=None):
     economy = get_economy()
     user = db.session.query(User).get(seller_id)
     user.balance -= amount
-    economy.sell(amount)
+    economy.burn(amount * TransactionsFee.SELL)
+    economy.sell(amount - amount * TransactionsFee.SELL)
     return log_transaction(
         recipient_id=seller_id,
         amount=amount,
@@ -118,6 +119,14 @@ def sell(seller_id, amount, comment=None):
 
 
 def art_purchase(buyer_id, seller_id, amount, art_id):
+    economy = get_economy()
+    buyer = db.session.query(User).get(buyer_id)
+    seller = db.session.query(User).get(seller_id)
+    buyer.balance -= amount
+    seller.balance += amount - TransactionsFee.ART_PURCHASE * amount
+    economy.burn(amount)
+    art = db.session.query(Art).get(art_id)
+    art.owner_id = buyer_id
     return log_transaction(
         sender_id=buyer_id,
         recipient_id=seller_id,

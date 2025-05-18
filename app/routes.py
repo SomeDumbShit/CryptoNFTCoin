@@ -64,7 +64,8 @@ def create_art():
         'hats': request.form.get('hats', 'none'),
         'accessory': request.form.get('accessory', 'none')
     }
-
+    user = db.session.query(User).get(current_user.id)
+    attributes = user.attributes
     preview_url = url_for('main.preview_image',
                           background=selected['background'],
                           body=selected['body'],
@@ -81,16 +82,20 @@ def create_art():
             flash('Заполните все поля', 'danger')
 
         else:
+            background, body, eyes, ears, mouth, clothes, hats, accessory = list(selected.values())
+            default_attributes = ['green', 'panda', 'angry_eyes', 'black_ears', 'joyful', 'blaze', 'none']
+            for attribute in selected.values():
+                if attribute not in default_attributes:
+                    attributes.remove(attribute)
             paths = [
-                f'app/static/attributes/background/{selected["background"]}.png',
-                f'app/static/attributes/body/{selected["body"]}.png',
-                f'app/static/attributes/eyes/{selected["eyes"]}.png',
-                f'app/static/attributes/ears/{selected["ears"]}.png',
-                f'app/static/attributes/clothes/{selected["clothes"]}.png',
-                f'app/static/attributes/mouth/{selected["mouth"]}.png',
-                f'app/static/attributes/hats/{selected["hats"]}.png',
-                f'app/static/attributes/accessories/{selected["accessory"]}.png'
-            ]
+                f'app/static/attributes/background/{background}.png',
+                f'app/static/attributes/body/{body}.png',
+                f'app/static/attributes/eyes/{eyes}.png',
+                f'app/static/attributes/ears/{ears}.png',
+                f'app/static/attributes/clothes/{clothes}.png',
+                f'app/static/attributes/mouth/{mouth}.png',
+                f'app/static/attributes/hats/{hats}.png',
+                f'app/static/attributes/accessories/{accessory}.png']
             img = combine_layers(paths)
             os.makedirs(UPLOAD_FOLDER, exist_ok=True)
             img.save(os.path.join(UPLOAD_FOLDER, f'{'_'.join(selected.values())}.png'))
@@ -136,11 +141,12 @@ def create_art():
                     flash(f'🎉 Quest completed! You earned {quest.reward} RYT!', 'success')
 
             db.session.commit()
+
             flash('Your artwork has been saved!', 'success')
             return redirect(url_for('main.home'))
 
     return render_template('create_art.html',
-                           attributes=art_attributes,
+                           attributes=attributes,
                            selected=selected,
                            preview_url=preview_url)
 
@@ -206,32 +212,35 @@ def buy_art(art_id):
         flash("Недостаточно средств", "danger")
         return redirect(url_for('main.marketplace'))
 
-    buyer = current_user
-    seller = art.owner
-    artist = art.artist
-
-    price = art.price
-    fee_artist = int(price * 0.1)
-    seller_income = price - fee_artist
-
-    buyer.balance -= price
-    seller.balance += seller_income
-
-    if artist and artist.id != seller.id:
-        artist.balance += fee_artist
-
-    art.owner = buyer
     art.status = 'sold'
-
-    tx = Transaction(
-        sender_id=buyer.id,
-        recipient_id=seller.id,
-        amount=price,
-        transaction_fee=fee_artist,
-        art_id=art.id,
-        transaction_type="purchase"
-    )
-
+    art.views += 1
+    art_purchase(buyer_id=current_user.id, seller_id=art.owner_id, amount=art.price, art_id=art.id)
+    '''    buyer = current_user
+        seller = art.owner
+        artist = art.artist
+    
+        price = art.price
+        fee_artist = int(price * 0.1)
+        seller_income = price - fee_artist
+    
+        buyer.balance -= price
+        seller.balance += seller_income
+    
+        if artist and artist.id != seller.id:
+            artist.balance += fee_artist
+    
+        art.owner = buyer
+        art.status = 'sold'
+    
+        tx = Transaction(
+            sender_id=buyer.id,
+            recipient_id=seller.id,
+            amount=price,
+            transaction_fee=fee_artist,
+            art_id=art.id,
+            transaction_type="purchase"
+        )
+    '''
     db.session.add(tx)
     db.session.commit()
 
@@ -357,7 +366,7 @@ def give_tokens():
         flash("Пользователь не найден", 'danger')
         return redirect(url_for('main.admin_panel'))
 
-    user.balance += amount
+    reward_user(user_id=user.id, amount=amount)
     db.session.commit()
 
     flash(f"Пользователю {user.username} выдано {amount} токенов", 'success')
